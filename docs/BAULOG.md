@@ -12,7 +12,7 @@ Installation über HACS: Das Ganze ist jetzt ein fertig aufgebautes GitHub-Repos
 * **Datenordner darf nicht im Ordner des Bausteins liegen.** HACS ersetzt bei einer Aktualisierung den ganzen Ordner; Daten darin wären weg. Der Baustein startet dann nicht und sagt im Protokoll warum (`is_inside` löst Verknüpfungen auf und prüft vor dem Anlegen).
 * **Nur öffentliche Repositories.** HACS liest keine privaten Repositories (HACS-Dokumentation). Folgen: Der Inhalt des Repositories ist öffentlich; es gehören keine Zugangsdaten, keine privaten Namen und keine Pfade der Entwicklungsumgebung hinein (Prüfung K7).
 * **Regeln aus dem HACS-Quelltext statt aus dem Gedächtnis:** Pflichtschlüssel im Manifest (`codeowners`, `documentation`, `domain`, `issue_tracker`, `name`, `version`), `hacs.json` nur mit bekannten Schlüsseln, Symbol unter `custom_components/<domain>/brand/icon.png`, hassfest verlangt sortierte Manifest-Schlüssel. Keine Mindestversion von Home Assistant in `hacs.json`: getestet ist 2026.2.3 (die neueste, die hier installierbar war), eine Sperre könnte nur unnötig blockieren.
-* **Release-Ablauf:** Tag `vX.Y.Z` löst den Workflow aus, der Tag und Manifest vergleicht, testet und das Release mit dem Text aus `CHANGELOG.md` anlegt (HACS zeigt nur echte Releases als Versionen).
+* **Release-Ablauf:** Tag `vX.Y.Z` löst den Workflow aus, der Tag und Manifest vergleicht, testet und das Release mit dem Text aus `CHANGELOG.md` und dem ZIP des Bausteins anlegt (HACS zeigt nur echte Releases als Versionen). Wird das Release im Browser angelegt (dabei entsteht der Tag), ergänzt der Workflow es, statt am schon vorhandenen Release zu scheitern.
 * **Lizenz bewusst offen gelassen** (Entscheidung des Autors); die HACS-Prüfung `license` wird bis dahin ignoriert.
 * **Symbol:** eigene Gestaltung (Enso-Kreis mit dem Zeichen 合 auf indigoblauer Kachel), keine fremde Vorlage.
 
@@ -32,10 +32,10 @@ Installation über HACS: Das Ganze ist jetzt ein fertig aufgebautes GitHub-Repos
 | Prüfung | Ergebnis |
 |---|---|
 | `tests/test_server.py` – Baustein ohne Home Assistant; neu die Gruppe W (App im Baustein, Auslieferung, Datenordner-Schutz) | **229 von 229** |
-| `tests/test_package.py` – Aufbau des Repositories, K1–K10 (Dateiliste, Manifest, `hacs.json`, Versionen, Symbol, App, Workflows, Anleitungen, Geheimnisse, Werkzeug) | **85 von 85** |
+| `tests/test_package.py` – Aufbau des Repositories, K1–K10 (Dateiliste, Manifest, `hacs.json`, Versionen, Symbol, App, Workflows, Anleitungen, Geheimnisse, Werkzeug) | **86 von 86** |
 | `tests/test_live.py` – echtes Home Assistant 2026.2.3 headless, **ohne Datei in `www`** (so wie nach einer Installation durch HACS) | **55 von 55** |
-| `tests/mutationen.py` – 116 absichtlich eingebaute Fehler: 69 im Baustein, 43 im Repository (jeder muss die **gemeinte** Prüfung auslösen, nicht irgendeine), 4 in `__init__.py` gegen echtes Home Assistant | **116 von 116 erkannt, 0 überlebt** |
-| Abnahme: ZIP gebaut, in einem leeren Ordner entpackt, dort alle drei Läufe wiederholt | **229 / 85 / 55, alles grün** |
+| `tests/mutationen.py` – 117 absichtlich eingebaute Fehler: 69 im Baustein, 44 im Repository (jeder muss die **gemeinte** Prüfung auslösen, nicht irgendeine), 4 in `__init__.py` gegen echtes Home Assistant | **117 von 117 erkannt, 0 überlebt** |
+| Abnahme: ZIP gebaut, in einem leeren Ordner entpackt, dort alle drei Läufe wiederholt | **229 / 86 / 55, alles grün** |
 
 Test-Methode wie bisher: erst Tests schreiben und rot sehen, dann bauen; Fehler gezielt einbauen und prüfen, dass die richtige Prüfung rot wird.
 
@@ -45,6 +45,7 @@ Von hier aus nicht prüfbar: die HACS-Prüfung und hassfest selbst (sie laufen a
 
 * **Eine Gegenprobe war zu schwach:** Der eingebaute Fehler „Werkzeug übernimmt eine App ohne HTML-Prüfung“ wurde zunächst von einer *anderen* Prüfung erkannt, nicht von der gemeinten (Testeingabe zu schwach). Seitdem muss jede Repository-Mutation die dafür vorgesehene Prüfnummer auslösen; die Eingabe wurde verschärft.
 * **Prüfung K7 schlug an der eigenen Gegenprobe an** (ein Test enthielt den Namen, den er verbieten soll): Die Zeichenfolge wird dort jetzt zusammengesetzt.
+* **Release im Browser statt per Tag-Upload:** Beim Anlegen eines Releases im Browser entsteht der Tag zugleich mit dem Release; der Workflow hätte dann beim Anlegen „Release existiert bereits“ gemeldet und wäre rot geworden. Er ergänzt jetzt ein vorhandenes Release (Text, ZIP) und legt nur sonst eines an; Prüfung K8 und eine Gegenprobe dafür sind neu.
 * Ein Fehler in einem eigenen Test (Anzahl der `..` im Pfad) korrigiert; der Baustein war richtig.
 
 ### Bekannte Grenzen (neu in 1.1.0)

@@ -249,6 +249,7 @@ def gruppe_workflows():
     rsteps = [s for j in rel["jobs"].values() for s in j.get("steps", [])]
     rruns = "\n".join(str(s.get("run", "")) for s in rsteps)
     check("K8 release: Tag und Manifest-Version vergleichen, Tests, Release-Text, ZIP, gh release create", [x in rruns for x in ("check-tag", "tests/test_server.py", "tests/test_package.py", "build.py notes", "build.py zip", "gh release create")], [True] * 6)
+    check("K8 release: ein schon im Browser angelegtes Release wird ergänzt statt zum Fehler (gh release view, edit, upload --clobber)", [x in rruns for x in ("gh release view", "gh release edit", "gh release upload", "--clobber")], [True] * 4)
     alle_runs = [str(s.get("run", "")) for wf in (val, rel) for j in wf["jobs"].values() for s in j.get("steps", [])]
     check("K8 keine fremden Eingaben direkt im Shell-Text (${{ github.event/head_ref … }}: Einschleus-Gefahr)", [r for r in alle_runs if re.search(r"\$\{\{\s*github\.(event|head_ref)", r)], [])
     check("K8 kein pull_request_target", ["pull_request_target" in _on(wf) for wf in (val, rel)], [False, False])

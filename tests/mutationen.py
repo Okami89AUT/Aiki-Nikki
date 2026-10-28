@@ -184,6 +184,7 @@ MP = [
     ("paket-schnittstelle-alte-version", _edit("docs/SCHNITTSTELLE.md", '"version": "1.1.0"', '"version": "1.0.0"'), "K4"),
     ("paket-workflow-release-ohne-schreibrecht", _edit(".github/workflows/release.yml", "  contents: write", "  contents: read"), "K8"),
     ("paket-workflow-release-ohne-tagpruefung", _edit(".github/workflows/release.yml", 'run: python tools/build.py check-tag "$GITHUB_REF_NAME"', 'run: echo ohne Pruefung'), "K8"),
+    ("paket-workflow-release-scheitert-an-vorhandenem-release", _edit(".github/workflows/release.yml", 'if gh release view "$GITHUB_REF_NAME"', 'if false'), "K8"),
     ("paket-workflow-ohne-hacs-pruefung", _edit(".github/workflows/validate.yml", "uses: hacs/action@main", "uses: actions/checkout@v4"), "K8"),
     ("paket-workflow-aktion-ohne-version", _edit(".github/workflows/validate.yml", "uses: home-assistant/actions/hassfest@master", "uses: home-assistant/actions/hassfest"), "K8"),
     ("paket-workflow-einschleusung", _edit(".github/workflows/validate.yml", "run: pip install aiohttp pyyaml", 'run: echo "${{ github.event.head_commit.message }}"'), "K8"),

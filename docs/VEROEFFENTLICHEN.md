@@ -20,7 +20,7 @@ Andere Datei hochladen oder ändern geht im Browser (**Add file**, **Upload file
 1. Version erhöhen: `custom_components/aikido_tracker/manifest.json` (`version`) und `const.py` (`VERSION`) auf dieselbe Nummer setzen, einen Eintrag oben in `CHANGELOG.md` und `docs/BAULOG.md` schreiben, im Änderungsprotokoll die App-Version nennen („App v…“).
 2. Neue App-Version übernehmen: `python3 tools/build.py sync-app <aikido-kyu-tracker.html>`.
 3. Prüfen: `python3 tests/test_server.py` und `python3 tests/test_package.py` müssen grün sein.
-4. Hochladen (Commit), dann einen Tag setzen, z. B. `v1.1.0` (Releases, **Draft a new release**, neuen Tag eingeben, veröffentlichen, oder `git tag v1.1.0 && git push origin v1.1.0`). Der Workflow „Release“ vergleicht den Tag mit der Version im Manifest, führt die Tests aus und legt das Release mit dem Text aus `CHANGELOG.md` und der Datei `aikido_tracker.zip` an.
+4. Hochladen (Commit), dann das Release anlegen, z. B. für `v1.1.0`. Im Browser: **Releases**, **Draft a new release**, bei **Choose a tag** `v1.1.0` eingeben und **Create new tag on publish** wählen, als Titel „Aikido Tracker 1.1.0“, **Publish release**. Mit Git geht es auch: `git tag v1.1.0 && git push origin v1.1.0`. Der Workflow „Release“ startet mit dem neuen Tag, vergleicht ihn mit der Version im Manifest, führt die Tests aus und ergänzt das Release um den Text aus `CHANGELOG.md` und die Datei `aikido_tracker.zip` (gibt es das Release noch nicht, legt er es an). Wird er rot, steht der Grund im Reiter **Actions**; für HACS genügt das Release selbst.
 5. In Home Assistant zeigt HACS das Update an.
 
 ## Prüfungen auf GitHub
