@@ -1,0 +1,19 @@
+{
+  "domain": "aikido_tracker",
+  "name": "Aikido Tracker",
+  "codeowners": [
+    "@Okami89AUT"
+  ],
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/Okami89AUT/Aiki-Nikki",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Okami89AUT/Aiki-Nikki/issues",
+  "loggers": [
+    "custom_components.aikido_tracker"
+  ],
+  "requirements": [],
+  "version": "1.1.0"
+}

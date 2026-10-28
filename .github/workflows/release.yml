@@ -1,0 +1,41 @@
+name: Release
+
+# Startet, wenn ein Tag der Form v1.2.3 hochgeladen wird. HACS zeigt nur echte Releases als Versionen an
+# ("nur Tags reichen nicht") – dieser Workflow legt das Release samt Beschreibung aus CHANGELOG.md an.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release veröffentlichen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Tag mit der Version im Manifest vergleichen
+        run: python tools/build.py check-tag "$GITHUB_REF_NAME"
+      - name: Abhängigkeiten
+        run: pip install aiohttp pyyaml
+      - name: Tests
+        run: |
+          python tests/test_server.py
+          python tests/test_package.py
+      - name: Release-Text und ZIP bauen
+        run: |
+          python tools/build.py notes "$GITHUB_REF_NAME" > release-notes.md
+          python tools/build.py zip --out dist
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" dist/aikido_tracker.zip
+          --title "Aikido Tracker ${GITHUB_REF_NAME#v}"
+          --notes-file release-notes.md
+          --verify-tag
