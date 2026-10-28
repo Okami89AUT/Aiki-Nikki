@@ -53,6 +53,13 @@ Von hier aus nicht prüfbar: die HACS-Prüfung und hassfest selbst (sie laufen a
 * Die App speichert noch nur im Browser; der Abgleich mit dem Server kommt mit App v2.2.
 * Nach der ersten Installation über HACS muss Home Assistant neu gestartet werden (der Baustein hat noch keine Einrichtung über die Oberfläche; die Einstellungen stehen in `configuration.yaml`).
 
+### Nachtrag (28.10.2026) – nur die Workflows, kein neues Release
+
+* GitHub zeigte bei den Läufen „Node.js 20 is deprecated“ für `actions/checkout@v4` und `actions/setup-python@v5`. Beide stehen jetzt auf `@v7` (laufen auf Node 24). Live geprüft: der Hinweis ist weg, HACS, hassfest und Tests laufen grün.
+* Neue Prüfung in K8 („Aktionen laufen auf Node 24“) erkennt zu alte Versionen; dazu zwei eingebaute Fehler. Stand danach: `tests/test_package.py` **87 von 87**, `tests/mutationen.py` **119** eingebaute Fehler (69 im Baustein, 46 im Repository, 4 gegen echtes Home Assistant).
+* `ubuntu-latest` bleibt (GitHub stellt das Label zwischen 19.10. und 19.11.2026 auf Ubuntu 26 um). Vorab in einem Probelauf auf `ubuntu-26.04` geprüft: alle drei Prüfungen grün.
+* Offen und gewollt für 1.2.0: Das Manifest bekommt `categories` (HACS-Warnung „manifest has no categories“; für benutzerdefinierte Repositories nur ein Hinweis).
+
 ## ✅ Version 1.0.0 (26.10.2026)
 
 Erste Fassung: zentraler Speicher für mehrere Personen als Custom Integration für Home Assistant.
