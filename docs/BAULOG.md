@@ -34,7 +34,7 @@ Installation über HACS: Das Ganze ist jetzt ein fertig aufgebautes GitHub-Repos
 | `tests/test_server.py` – Baustein ohne Home Assistant; neu die Gruppe W (App im Baustein, Auslieferung, Datenordner-Schutz) | **229 von 229** |
 | `tests/test_package.py` – Aufbau des Repositories, K1–K10 (Dateiliste, Manifest, `hacs.json`, Versionen, Symbol, App, Workflows, Anleitungen, Geheimnisse, Werkzeug) | **85 von 85** |
 | `tests/test_live.py` – echtes Home Assistant 2026.2.3 headless, **ohne Datei in `www`** (so wie nach einer Installation durch HACS) | **55 von 55** |
-| `tests/mutationen.py` – 115 absichtlich eingebaute Fehler: 69 im Baustein, 42 im Repository (jeder muss die **gemeinte** Prüfung auslösen, nicht irgendeine), 4 in `__init__.py` gegen echtes Home Assistant | **115 von 115 erkannt, 0 überlebt** |
+| `tests/mutationen.py` – 116 absichtlich eingebaute Fehler: 69 im Baustein, 43 im Repository (jeder muss die **gemeinte** Prüfung auslösen, nicht irgendeine), 4 in `__init__.py` gegen echtes Home Assistant | **116 von 116 erkannt, 0 überlebt** |
 | Abnahme: ZIP gebaut, in einem leeren Ordner entpackt, dort alle drei Läufe wiederholt | **229 / 85 / 55, alles grün** |
 
 Test-Methode wie bisher: erst Tests schreiben und rot sehen, dann bauen; Fehler gezielt einbauen und prüfen, dass die richtige Prüfung rot wird.

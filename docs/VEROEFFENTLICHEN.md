@@ -4,7 +4,7 @@ HACS installiert Bausteine aus GitHub-Repositories. Dieses Repository ist dafür
 
 ## Einmalig: Repository für HACS freigeben
 
-Das Repository `Okami89AUT/Aiki-Nikki` ist angelegt, der Inhalt dieses Pakets liegt auf dem Zweig `main`. Damit HACS es installieren kann, bleiben drei Handgriffe auf GitHub:
+Das Repository `Okami89AUT/Aiki-Nikki` ist angelegt, der Inhalt dieses Pakets liegt im Standardzweig. Damit HACS es installieren kann, bleiben drei Handgriffe auf GitHub:
 
 1. **Öffentlich machen.** HACS kann keine privaten Repositories lesen, und die HACS-Prüfung auf GitHub verweigert sie ebenfalls. Im Repository **Settings**, ganz unten **Danger Zone**, **Change visibility**, **Make public**. Danach kann jeder den Inhalt und den Verlauf der Änderungen lesen. Zugangsdaten und private Angaben sind nicht enthalten (Prüfung K7 in `tests/test_package.py`).
 2. **Beschreibung und Themen eintragen** (Zahnrad neben „About“ auf der Startseite des Repositories), falls noch nicht geschehen:
