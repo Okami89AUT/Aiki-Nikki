@@ -255,6 +255,18 @@ def gruppe_workflows():
     check("K8 kein pull_request_target", ["pull_request_target" in _on(wf) for wf in (val, rel)], [False, False])
     ohne_ref = [s["uses"] for wf in (val, rel) for j in wf["jobs"].values() for s in j.get("steps", []) if s.get("uses") and "@" not in s["uses"]]
     check("K8 jede verwendete Aktion nennt eine Version/einen Zweig (@…)", ohne_ref, [])
+    # GitHub meldet "Node.js 20 is deprecated", solange checkout < v5 oder setup-python < v6 benutzt wird (laufen erst ab dort auf Node 24)
+    mindestens = {"actions/checkout": 5, "actions/setup-python": 6}
+    veraltet = []
+    for wf in (val, rel):
+        for j in wf["jobs"].values():
+            for s in j.get("steps", []):
+                name, _, ref = (s.get("uses") or "").partition("@")
+                if name in mindestens:
+                    treffer = re.match(r"v(\d+)(\.|$)", ref)
+                    if not treffer or int(treffer.group(1)) < mindestens[name]:
+                        veraltet.append(s["uses"])
+    check("K8 Aktionen laufen auf Node 24 (checkout ab v5, setup-python ab v6), sonst Node-20-Warnung in GitHub", veraltet, [])
     fehlen = []
     for r in alle_runs:
         for pfad in re.findall(r"\b((?:tests|tools)/[A-Za-z0-9_./-]+\.py)\b", r):

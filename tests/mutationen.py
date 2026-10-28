@@ -187,6 +187,8 @@ MP = [
     ("paket-workflow-release-scheitert-an-vorhandenem-release", _edit(".github/workflows/release.yml", 'if gh release view "$GITHUB_REF_NAME"', 'if false'), "K8"),
     ("paket-workflow-ohne-hacs-pruefung", _edit(".github/workflows/validate.yml", "uses: hacs/action@main", "uses: actions/checkout@v4"), "K8"),
     ("paket-workflow-aktion-ohne-version", _edit(".github/workflows/validate.yml", "uses: home-assistant/actions/hassfest@master", "uses: home-assistant/actions/hassfest"), "K8"),
+    ("paket-workflow-veraltete-aktion-checkout", _edit(".github/workflows/validate.yml", "actions/checkout@v7\n      - uses: home-assistant/actions/hassfest@master", "actions/checkout@v4\n      - uses: home-assistant/actions/hassfest@master"), "K8"),
+    ("paket-workflow-veraltete-aktion-setup-python", _edit(".github/workflows/release.yml", "actions/setup-python@v7", "actions/setup-python@v5"), "K8"),
     ("paket-workflow-einschleusung", _edit(".github/workflows/validate.yml", "run: pip install aiohttp pyyaml", 'run: echo "${{ github.event.head_commit.message }}"'), "K8"),
     ("paket-workflow-pull-request-target", _edit(".github/workflows/validate.yml", "  pull_request:\n", "  pull_request_target:\n"), "K8"),
     ("paket-workflow-fehlende-datei", _edit(".github/workflows/validate.yml", "python tests/test_package.py", "python tests/test_paket.py"), "K8"),
