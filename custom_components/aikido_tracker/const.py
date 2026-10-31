@@ -1,7 +1,7 @@
 """Konstanten des Aikido-Tracker-Bausteins."""
 
 DOMAIN = "aikido_tracker"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 API_VERSION = 1
 APP_NAME = "aikido-tracker-server"
 

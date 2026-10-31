@@ -2,6 +2,22 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.2.0 (31.10.2026)
+
+Die mitgelieferte App gleicht sich jetzt selbst mit diesem Baustein ab (App v2.3).
+
+### Entscheidungen
+
+* **Die Schnittstelle bleibt unverändert** (`api: 1`). Der Abgleich steckt vollständig in der App; der Baustein konnte so bleiben, wie er ist. Das heißt auch: Eine ältere App-Fassung läuft mit diesem Baustein weiter, und eine neuere App mit einem älteren Baustein ebenso.
+* **Der Zugangscode bleibt auf dem Gerät.** Die App bewahrt ihn getrennt von den Personendaten auf (eigener Speicher-Schlüssel, nicht im Backup und nicht in Rettungskopien). Der Baustein speichert ihn ohnehin nur als scrypt-Hash.
+* **Zusammenführen statt Überschreiben:** Die App entscheidet je Eintrag anhand des zuletzt abgeglichenen Standes (als Fingerabdruck gespeichert, nicht als Kopie der Daten). Der Baustein liefert dafür nur `rev` und die Daten — die Versionsnummer gegen unbemerktes Überschreiben gab es schon in 1.0.0.
+* **Keine Pflicht zum Abgleich:** Ohne Anmeldung verhält sich die App wie bisher; die Karte „Abgleich“ erscheint nur, wenn die Seite von diesem Baustein geladen wurde.
+
+### Prüfungen
+
+Unverändert gegenüber 1.1.0 (Baustein, Repository, Gegenprobe, Lauf gegen ein echtes Home Assistant). Die App bringt
+ihre eigenen Prüfungen mit: 388 zum Abgleich, Gegenprobe mit 313 eingebauten Fehlern, gesamte Regression grün.
+
 ## ✅ Version 1.1.0 (27.10.2026)
 
 Installation über HACS: Das Ganze ist jetzt ein fertig aufgebautes GitHub-Repository mit der App im Baustein.

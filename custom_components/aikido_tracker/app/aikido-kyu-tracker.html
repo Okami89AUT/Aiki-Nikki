@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.1)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.3)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -141,9 +141,70 @@
      eingebaute Fehler (Fokus-Falle, falsche Antwortnummer, markierte Begriffe im Quiz, zu kleine Knöpfe, ungeschützte Suche, Taste 4 …) —
      alle gefunden, 5 davon erst nach zusätzlichen Prüfungen. Hier nicht prüfbar: Safari/iPhone (nur Chromium). Kanji und Bedeutungen sind
      nach bestem Wissen erfasst, aber nicht aus einer Quelle abgeglichen: bitte vom Trainer gegenlesen lassen.
-  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Personen/Profile (Namensauswahl, getrennte Daten je Person — Ziel: Datei liegt auf dem
-     Home Assistant, Zugriff im Heimnetz und über DuckDNS, mehrere Personen) -> optional zentraler Speicher auf dem Home Assistant ->
-     Prüfungs-Chronik -> Trainingseinheit mit Dauer + Stunden seit letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
+  ✅ Version 2.2 — Personen (29.10.2026): Unter dem Titel steht ein Knopf mit dem Namen der aktiven Person ("Ich ⌄"); er öffnet das Fenster
+     "Personen": wechseln, neu anlegen, umbenennen, löschen. Jede Person hat ihren eigenen Trainingsverlauf, eigene Links, Ziel-Wiederholungen und
+     ihr eigenes Prüfungsziel; Ansicht (hell/dunkel) und Rettungskopien gelten für das ganze Gerät. Die bisherigen Daten laufen unverändert als Person
+     "Ich" weiter (gleiche Speicher-Schlüssel, nichts wird umgeschrieben, beim bloßen Öffnen wird nichts gespeichert); jede weitere Person legt ihre
+     vier Bereiche unter "<bisheriger Schlüssel>@<Kennung>" ab. Die Kennung ("p" + 8 zufällige Zeichen a-z/0-9) entsteht nie aus dem Namen, damit
+     Umbenennen nichts verschiebt. Die Personenliste liegt unter "aikido-profiles" (Version 1: aktive Person + Liste mit Kennung, Name, Anlegedatum).
+     WECHSELN liest die Daten der neuen Person zuerst vollständig und übernimmt sie dann in einem Zug ohne await (nie ein halber Stand, in dem eine
+     Eingabe speichern könnte); Entwürfe, Filter, aufgeklappte Formulare, Auswahl im Sonnensystem, Trainingstag- und Begriffe-Fenster werden
+     zurückgesetzt, der Tab bleibt, die Seite beginnt oben; der Wechsel schreibt nur die Personenliste, nie Personendaten. ANLEGEN, UMBENENNEN und
+     LÖSCHEN schreiben zuerst die Personenliste — scheitert das, bleibt alles wie es war und eine Meldung im Fenster erklärt es; erst danach werden beim
+     Löschen die Daten entfernt (Rückfrage mit Namen und Zahl der Einträge; die letzte Person lässt sich nicht löschen; ohne delete() im Artifact-Speicher
+     wird der Wert geleert). NAMEN: Steuerzeichen und unsichtbare Umlenker raus, Tabulator/Zeilenumbruch -> Leerzeichen, Unicode-NFC, Leerraum
+     zusammengefasst, höchstens 40 Zeichen, "gibt es schon" auch bei anderer Groß-/Kleinschreibung und Unicode-Schreibweise (NFKC, z.B. Vollbreite-
+     Buchstaben), höchstens 12 Personen. SCHUTZ VOR DATENVERLUST: Solange Änderungen der aktiven Person nur im Arbeitsspeicher liegen (Speicherfehler),
+     sind Wechseln und Anlegen gesperrt (Meldung: erst Backup speichern); Umbenennen bleibt möglich. BESCHÄDIGTE DATEN: Rettungskopie und Banner gelten
+     nur für die gerade geladene Person (Meldung nennt den Bereich); eine beschädigte oder falsch geformte Personenliste führt zum sauberen Start mit
+     "Ich", der Originaltext wird gesichert. Export und Import arbeiten für die aktive Person. Dabei gefunden und behoben (Fehler seit Paket A, bisher
+     nur nicht aufgefallen): das rote Fehlerbanner lag über allen Fenstern (z-index 300 > 100) und verdeckte bei offenem Fenster Liste und Knöpfe
+     (Personen, Trainingstag erfassen, Begriffe) — jetzt liegt es unter den Fenstern (90); offene Fenster sind ohnehin modal.
+     Test: 201 Prüfungen (Ausgangsstand gegen 2.1: 32 von 34 ausgeführten Prüfungen fehlgeschlagen, der Rest bricht mangels Oberfläche ab), darunter
+     Rückwärtsverträglichkeit mit Daten aus 2.1, Zeichen-für-Zeichen-Vergleich der Daten anderer Personen, Speicherfehler, beschädigte Personenliste,
+     feindliche Namen, Artifact-Speicher ohne delete(), Fenster-Verhalten (Fokus, Esc, Tab-Falle), Tippflächen >= 44 px, Eingabe 16 px, Kontrast und
+     320-1280 px hell/dunkel; Sichtprüfung bei 390 px hell/dunkel. Gegenprobe: 22 absichtlich eingebaute Fehler (kein Schutz beim Wechsel/Anlegen,
+     Schreibfehler ignoriert, keine Trennung der Daten, Namensvergleich, Steuerzeichen, HTML im Namen, Löschen ohne Rückfrage/ohne Daten, Kennung
+     ungeprüft, Tab-Falle, aria-modal, Banner über Fenster …) — alle gefunden, einer (Namensvergleich ohne Unicode-Kompatibilität) erst nach einer
+     zusätzlichen Prüfung. Gesamt-Regression (18 Prüfdateien, u.a. 3.629 Datums-Prüfungen, 238 Begriffe/Quiz, 252 Layout-Ansichten): alles grün.
+     Beobachtung: In EINEM Lauf unter hoher Parallellast schlug die Quiz-Voreinstellung "Stoff = Ziel-Kyu" (Begriffe-Prüfung G7) fehl; in 7
+     Wiederholungen — auch mit 4-facher Last und gedrosselter CPU — nicht mehr reproduzierbar, Ursache offen (im Auge behalten).
+     Hier nicht prüfbar: Safari/iPhone (nur Chromium).
+  ✅ Version 2.3 — Abgleich mit dem Home-Assistant-Baustein (31.10.2026): Die App kann ihre Daten jetzt über den eigenen
+     Home-Assistant-Baustein (aikido_tracker, docs/SCHNITTSTELLE.md) zwischen mehreren Geräten gleich halten. Sichtbar wird davon nur
+     etwas, wenn die Seite VOM Baustein geladen wurde (/aikido-tracker): dann steht in der Übersicht die Karte "Abgleich" über der
+     Daten-Sicherung. Als Datei oder von einem fremden Server geöffnet ist alles wie bisher, und ohne Verbindung ändert sich nichts.
+     JE PERSON eine eigene Verbindung (Server-Name + Zugangscode, Schlüssel "aikido-sync[@Kennung]") — bewusst NICHT in den
+     Personendaten: der Code steht in keinem Backup und in keiner Rettungskopie. Anmelden oder (mit Einladungscode) neu anlegen,
+     trennen mit Rückfrage, neu anmelden, wenn der Server Name/Code ablehnt — bis dahin wird der Server gar nicht mehr gefragt,
+     damit er nicht nach 10 Fehlversuchen sperrt.
+     ZUSAMMENFÜHREN statt überschreiben (Drei-Wege, Abschnitt 6d): Grundlage ist der zuletzt abgeglichene Stand als Fingerabdruck
+     (je Eintrag/Technik ein Hash, nicht die Daten selbst — der gespeicherte Stand bleibt winzig). Je Eintrag, Link, Ziel-Wiederholung
+     und Prüfungsziel-Feld wird einzeln entschieden; bei einem echten Konflikt gewinnt der eigene Stand, bei "gelöscht gegen geändert"
+     bleibt die Änderung. Ist die Versionsnummer des Servers kleiner als die zuletzt bekannte (Wiederherstellung aus einer Sicherung),
+     wird vereinigt statt gelöscht. Daten vom Server werden wie Fremddaten geprüft (6d, sanitizeSyncDoc): falsch geformte Bereiche,
+     doppelte oder fehlende Kennungen und unbekannte Teile werden verworfen und gezählt; ein Stand aus einer NEUEREN App-Version wird
+     erkannt und nichts verändert. Eingaben während der Wartezeit auf das Netz gehen nicht verloren; Einträge ohne brauchbare Kennung
+     bleiben auf dem Gerät. Grenze: 8 MiB je Stand (in Bytes gemessen, nicht in Zeichen).
+     VON ALLEIN (Abschnitt 6f): beim Start, gebündelt kurz nach Eingaben, beim Zurückkehren zur App (wenn der letzte Abgleich nicht
+     mehr frisch ist), wenn das Netz wiederkommt, nach einem Personenwechsel und regelmäßig im Hintergrund; nach Fehlern mit wachsenden
+     Pausen, bei "zu viele Anfragen" erst nach der vom Server genannten Zeit, nach einer Ablehnung gar nicht. Nichts wird übernommen,
+     solange ein Fenster offen ist oder jemand in ein Feld tippt — es wird kurz später nachgeholt. Mit "?abgleich=manuell" in der
+     Adresse bleibt alles von Hand (Fehlersuche; die Prüfungen nutzen das).
+     Test: 388 neue Prüfungen in fünf Dateien (s1 Zusammenführen 40, s2 Prüfen/Fingerabdruck/Übernahme 70, s3 Ablauf gegen einen
+     Nachbau des Servers 188, s4 Oberfläche 61, s5 automatischer Abgleich 29) — darunter zwei Geräte gleichzeitig, Abbruch in jedem
+     Schritt (Trennen/Personenwechsel mitten im Übernehmen, Speichern, Hochladen), Serverfehler, Zeitüberschreitung, zurückgesetzter
+     Server, 6000 Einträge, 8-MiB-Grenze mit Umlauten, Tastatur und Darstellung 320-768 px hell/dunkel.
+     Gegenprobe: 313 absichtlich eingebaute Fehler in allen fünf Teilen, gegen die fertige 2.3 noch einmal komplett durchgelaufen —
+     alle gefunden. Fünf weitere stehen mit Begründung im Prüfskript: sie sind mit dem heutigen Code nachweislich nicht
+     beobachtbar (doppelte Absicherungen, die erst bei späteren Änderungen greifen würden).
+     Bekannte Grenzen: Gleiche Technik + gleiches Datum + gleiche Trainingsart, auf zwei Geräten getrennt eingetragen, bleiben zwei
+     Einträge (die Duplikat-Erkennung greift nur auf dem Gerät selbst). Kommt einmal ein neuer Datenbereich dazu, muss SCHEMA_VERSION
+     hochgezählt werden. Auf dem iPhone hilft der Abgleich zusätzlich gegen das Aufräumen des Browser-Speichers.
+     Hier nicht prüfbar: Safari/iPhone (nur Chromium) und das Zusammenspiel mit dem echten Baustein (folgt mit Release 1.2.0).
+  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.2.0 mit dieser App (Update über GitHub/HACS; je Release prüfen, ob die neue
+     Version auf dem Home Assistant ankommt, ggf. über den Konnektor "Home Ass") -> Prüfungs-Chronik -> Trainingseinheit mit Dauer + Stunden seit
+     letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
      Später/optional: B Handy/Barrierefreiheit, C Bedienung, D Datenmodell, Web-App/Veröffentlichen (Schriften selbst einbetten,
      Impressum/Datenschutz), NAS.
   Alle Original-Techniken/-Daten unverändert. Bei Fortsetzung in neuem Chat:
@@ -325,9 +386,11 @@
      UI-RUECKMELDUNG: Fehlermeldung & Toast
      ------------------------------------------------------------------ */
   /* Fehlerbanner: klebt beim Scrollen am oberen Rand (sticky) -> auch mitten in der Liste sichtbar;
-     liegt über Dialog (z 100) und Tableiste (z 50). Das Attribut [hidden] blendet es aus. */
+     liegt über der Tableiste (z 50), aber UNTER den Dialogen (z 100): ein offener Dialog ist modal, und das Banner
+     darf weder seine Liste noch seine Knöpfe verdecken (vorher z 300: es schwebte mitten über dem Personen-Fenster).
+     Das Attribut [hidden] blendet es aus. */
   #error-banner {
-    position: sticky; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 300;
+    position: sticky; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 90;
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
     margin: 12px 20px 0; padding: 8px 8px 8px 14px; background: var(--c-error-bg); border: 1px solid var(--c-error-border);
     color: var(--c-error-text); border-radius: 8px; font-size: 13px; line-height: 1.45; box-shadow: var(--shadow-raised);
@@ -736,6 +799,103 @@
   .modal-footer-actions { display: flex; gap: 8px; }
   .modal-footer .form-save:disabled { opacity: 0.45; cursor: not-allowed; }
   /* ------------------------------------------------------------------
+     KOMPONENTE: Personen (Knopf in der Kopfzeile + Fenster zum Wechseln, Anlegen, Umbenennen, Löschen)
+     ------------------------------------------------------------------ */
+  .profile-bar { margin-top: 14px; display: flex; }
+  .profile-chip {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 6px 14px 6px 12px;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 999px; color: var(--c-ink);
+    font-family: inherit; font-size: 14px; line-height: 1.2; cursor: pointer; box-shadow: var(--shadow-card);
+  }
+  .profile-chip:hover { border-color: var(--c-accent-soft); }
+  .profile-chip-icon, .profile-chip-caret, .profile-btn-icon {
+    flex-shrink: 0; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6;
+  }
+  .profile-chip-icon { width: 18px; height: 18px; stroke: var(--c-accent); }
+  .profile-chip-caret { width: 14px; height: 14px; stroke: var(--c-ink-muted); }
+  .profile-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+
+  .profile-panel { max-width: 440px; }
+  .profile-panel .modal-header { padding: 8px 10px 8px 18px; }
+  #profile-title:focus { outline: none; }
+  .profile-close { width: 44px; height: 44px; font-size: 16px; color: var(--c-ink-muted); }
+  .profile-hint { margin: 0; font-size: 13px; line-height: 1.5; color: var(--c-ink-muted); }
+  .profile-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .profile-row { display: flex; align-items: stretch; gap: 6px; }
+  .profile-select {
+    flex: 1 1 auto; min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 14px; text-align: left; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 12px;
+    color: var(--c-ink); font-family: inherit; font-size: 15px; line-height: 1.3; cursor: pointer;
+  }
+  .profile-select:hover { border-color: var(--c-accent-soft); }
+  .profile-row.active .profile-select { border-color: var(--c-accent); background: var(--c-surface-alt); font-weight: 500; }
+  .profile-select-name { min-width: 0; overflow-wrap: anywhere; }
+  .profile-check { color: var(--c-accent); font-weight: 700; flex-shrink: 0; }
+  .profile-icon-btn {
+    flex: 0 0 44px; width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 12px; color: var(--c-ink-soft);
+    font-family: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+  }
+  .profile-icon-btn:hover { border-color: var(--c-accent-soft); }
+  .profile-icon-btn.danger { color: var(--c-delete); }
+  .profile-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .profile-btn-icon { width: 18px; height: 18px; stroke: currentColor; }
+  .profile-rename-input, .profile-input {
+    flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 12px; font-family: inherit; font-size: 16px;
+    color: var(--c-ink); background: var(--c-surface-alt); border: 1px solid var(--c-border); border-radius: 12px;
+  }
+  .profile-error {
+    margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.45;
+    background: var(--c-error-bg); border: 1px solid var(--c-error-border); color: var(--c-error-text);
+  }
+  .profile-error[hidden] { display: none; }
+  .profile-new { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--c-border-dashed); }
+  .profile-new-label { font-size: 13px; font-weight: 500; color: var(--c-ink-soft); }
+  .profile-new-row { display: flex; gap: 8px; align-items: stretch; }
+  .profile-add-btn {
+    flex: 0 0 auto; min-height: 44px; padding: 8px 18px; border-radius: 999px; background: var(--c-accent); border: 1px solid var(--c-accent);
+    color: var(--c-accent-contrast); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  [data-theme="dark"] .profile-add-btn { color: var(--c-bg); }
+  /* ------------------------------------------------------------------
+     KOMPONENTE: Abgleich (Karte in der Uebersicht + Fenster zum Verbinden)
+     ------------------------------------------------------------------ */
+  .dash-sync-card { margin-bottom: 14px; }
+  .sync-status { font-size: 12.5px; color: var(--c-ink-muted); margin: 0 0 10px; line-height: 1.5; }
+  .sync-status.error { color: var(--c-error-text); }
+  .sync-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sync-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 18px;
+    background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink-soft); border-radius: 999px;
+    font-size: 14px; font-family: inherit; cursor: pointer; text-align: center; line-height: 1.25;
+  }
+  .sync-btn:hover { border-color: var(--c-accent-soft); }
+  .sync-btn.primary { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-accent-contrast); font-weight: 500; }
+  .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  [data-theme="dark"] .sync-btn.primary { color: var(--c-bg); }
+  .sync-panel { max-width: 460px; }
+  .sync-panel .modal-body { gap: 14px; }
+  .sync-dialog-hint { font-size: 12.5px; color: var(--c-ink-muted); margin: 0; line-height: 1.5; }
+  .sync-mode-row { display: flex; gap: 8px; }
+  .sync-mode-btn {
+    flex: 1 1 0; min-height: 44px; padding: 8px 12px; border-radius: 999px; background: var(--c-surface);
+    border: 1px solid var(--c-border); color: var(--c-ink-soft); font-family: inherit; font-size: 13.5px; cursor: pointer;
+  }
+  .sync-mode-btn[aria-pressed="true"] { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-accent-contrast); font-weight: 500; }
+  [data-theme="dark"] .sync-mode-btn[aria-pressed="true"] { color: var(--c-bg); }
+  .sync-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--c-ink-soft); }
+  .sync-field input {
+    min-height: 44px; padding: 8px 12px; font-family: inherit; font-size: 16px; color: var(--c-ink);
+    background: var(--c-surface-alt); border: 1px solid var(--c-border); border-radius: 12px;
+  }
+  .sync-field-note { font-size: 11.5px; color: var(--c-ink-faint); }
+  .sync-error {
+    margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.45;
+    background: var(--c-error-bg); border: 1px solid var(--c-error-border); color: var(--c-error-text);
+  }
+  .sync-error[hidden] { display: none; }
+  .sync-submit-row { display: flex; justify-content: flex-end; }
+  /* ------------------------------------------------------------------
      KOMPONENTE: Begriffe & Quiz (Karte in der Uebersicht + Fenster mit Glossar und Quiz)
      ------------------------------------------------------------------ */
   .dash-terms-card { margin-bottom: 14px; }
@@ -870,6 +1030,13 @@
       </svg>
     </button>
   </div>
+  <div class="profile-bar">
+    <button type="button" id="profile-chip" class="profile-chip" aria-haspopup="dialog" aria-label="Person wechseln, aktuell Ich">
+      <svg class="profile-chip-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M3.6 17c.7-3.3 3.1-5 6.4-5s5.7 1.7 6.4 5"/></svg>
+      <span class="profile-chip-name">Ich</span>
+      <svg class="profile-chip-caret" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+    </button>
+  </div>
   <div class="stats-row">
     <div class="stat-chip"><span class="stat-number" id="stat-sessions">0</span><span class="stat-label">Trainingseinträge</span></div>
     <div class="stat-chip"><span class="stat-number" id="stat-techniques">0</span><span class="stat-label">Techniken geübt</span></div>
@@ -941,6 +1108,8 @@
 
 <div id="session-modal-overlay" class="modal-overlay" hidden></div>
 <div id="terms-modal-overlay" class="modal-overlay" hidden></div>
+<div id="profile-modal-overlay" class="modal-overlay" hidden></div>
+<div id="sync-modal-overlay" class="modal-overlay" hidden></div>
 
 <script>
 /* QR Code Generator for JavaScript — Copyright (c) 2009 Kazuhiko Arase, MIT-Lizenz
@@ -1166,8 +1335,16 @@ function currentTechniqueId(key) {
 /* Technik zu einem gespeicherten Eintrag: zuerst über Kyu + Kategorie + Angriff + Name (bleibt richtig, auch wenn
    sich die Reihenfolge im Programm ändert), sonst über die gespeicherte ID. null = unbekannte Technik. */
 function resolveTechnique(raw) {
-  const id = currentTechniqueId(techNameKey(raw.kyu, raw.category, raw.attack, raw.technik)) || currentTechniqueId(raw.techniqueId);
+  const id = currentTechniqueId(storedNameKey(raw)) || currentTechniqueId(raw.techniqueId);
   return id ? TECH_BY_ID.get(id) : null;
+}
+
+/* Name-Schlüssel aus den gespeicherten Feldern eines Eintrags. Nur Text und Zahlen können zu einer Technik des Programms
+   passen; bei allem anderen (null, Objekt, …) gibt es keinen Schlüssel — und nie eine Umwandlung in Text: ein Objekt mit
+   eigenem "toString" würde dabei abstürzen (gespeicherte, importierte und Server-Daten sind nicht vertrauenswürdig). */
+function storedNameKey(raw) {
+  const parts = [raw.kyu, raw.category, raw.attack, raw.technik];
+  return parts.every((part) => typeof part === "string" || typeof part === "number") ? techNameKey(parts[0], parts[1], parts[2], parts[3]) : null;
 }
 
 /* Die Felder eines Eintrags, die aus dem Programm stammen (nie aus gespeicherten oder importierten Daten). */
@@ -1180,7 +1357,16 @@ function techFields(t) {
    (z.B. später aus dem Programm entfernt) bleibt unverändert erhalten. */
 function withCurrentTechnique(entry) {
   const tech = resolveTechnique(entry);
-  return tech ? Object.assign({}, entry, techFields(tech)) : entry;
+  return tech ? Object.assign(copyWithoutProto(entry), techFields(tech)) : entry;
+}
+
+/* Flache Kopie eines Objekts ohne einen eigenen Schlüssel "__proto__" (Object.assign würde damit den Prototyp der Kopie setzen). */
+function copyWithoutProto(obj) {
+  const out = {};
+  Object.keys(obj).forEach((k) => {
+    if (k !== "__proto__") Object.defineProperty(out, k, { value: obj[k], enumerable: true, writable: true, configurable: true });
+  });
+  return out;
 }
 
 /* Gespeichertes Objekt mit Technik-IDs als Schlüsseln (Links, Ziel-Wiederholungen) auf aktuelle IDs umstellen.
@@ -1506,6 +1692,19 @@ const TECH_THRESHOLDS_KEY = "aikido-tech-thresholds";
 
 const RESCUE_KEY = "aikido-rescue"; // Kopien unlesbarer Originaldaten (siehe Abschnitt 6)
 
+/* Personen (siehe Abschnitt 6c): Liste unter PROFILES_KEY = { v, active, list: [{ id, name, createdAt }] }.
+   Die Person "main" behält die bisherigen Schlüssel (so bleibt nach dem Update alles an seinem Platz), jede andere
+   speichert ihre vier Datenbereiche unter "<Schlüssel>@<Kennung>". Theme und Rettungskopien gelten fürs ganze Gerät. */
+const PROFILES_KEY = "aikido-profiles";
+const PROFILES_VERSION = 1;
+const MAIN_PROFILE_ID = "main";
+const PROFILE_ID_PATTERN = /^(main|p[a-z0-9]{8})$/; // Kennungen entstehen nie aus dem Namen
+const DEFAULT_PROFILE_NAME = "Ich";
+const FALLBACK_PROFILE_NAME = "Person";
+const MAX_PROFILES = 12;
+const MAX_PROFILE_NAME = 40;                        // Zeichen (Unicode-Zeichen, nicht UTF-16-Einheiten)
+const PERSON_KEYS = [STORAGE_KEY, EXAM_TARGET_KEY, TECH_LINKS_KEY, TECH_THRESHOLDS_KEY];
+
 const RECENT_DAYS = 14;
 
 /* Sicherung/Import: Dateiformat-Version und Grenzen */
@@ -1520,8 +1719,8 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.1";
-const APP_VERSION_DATE = "2026-10-25";  // Stand: Kalendertag der Auslieferung
+const APP_VERSION = "2.3";
+const APP_VERSION_DATE = "2026-10-31";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
    3. ANWENDUNGS-STATUS
@@ -1573,6 +1772,12 @@ let rescueNotice = null;     // Text des Hinweises im Banner, solange er angezei
 /* Ungespeicherte Eingaben je Technik (Datum, Trainingsart, Notiz, Link-Eingabe). Die Oberfläche wird bei fast jeder
    Aktion komplett neu aufgebaut — ohne diese Ablage wären getippte Texte danach weg. Siehe rememberDraft(). */
 let rowDrafts = {}; // Technik-ID -> { date, trainingsart, note, linkUrl }
+
+/* Personen (siehe Abschnitt 6c). log, examTarget, techLinks und techThresholds oben gehören immer der aktiven Person. */
+let profiles = [{ id: MAIN_PROFILE_ID, name: DEFAULT_PROFILE_NAME, createdAt: "" }]; // Reihenfolge = Reihenfolge im Fenster
+let activeProfileId = MAIN_PROFILE_ID;
+let profileBusy = false;     // ein Wechsel, Anlegen oder Löschen läuft gerade (zweiter Aufruf wird ignoriert)
+let profileRenameId = null;  // Person, deren Name im Fenster gerade bearbeitet wird
 
 /* ======================================================================
    4. HILFSFUNKTIONEN: allgemein
@@ -1777,6 +1982,32 @@ async function storageSet(key, value) {
   try { window.localStorage.setItem(key, value); return true; } catch (e) { return false; }
 }
 
+/* Entfernt einen Schlüssel. Hat der Artifact-Speicher kein delete(), wird der Wert geleert — loadChecked() behandelt
+   "" wie "nie gespeichert". Gibt true zurück, wenn es geklappt hat. */
+async function storageRemove(key) {
+  if (hasArtifactStorage()) {
+    try {
+      if (typeof window.storage.delete === "function") { await window.storage.delete(key, false); return true; }
+      return !!(await window.storage.set(key, "", false));
+    } catch (e) {
+      return false;
+    }
+  }
+  try { window.localStorage.removeItem(key); return true; } catch (e) { return false; }
+}
+
+/* Speicher-Schlüssel einer Person: "main" nutzt die bisherigen Schlüssel, jede andere "<Schlüssel>@<Kennung>".
+   Alles, was nicht zu den Daten einer Person gehört (Theme, Rettungskopien, Personenliste), bleibt unverändert. */
+function profileKey(base, id = activeProfileId) {
+  return PERSON_KEYS.includes(base) && id !== MAIN_PROFILE_ID ? `${base}@${id}` : base;
+}
+
+/* Derselbe Schlüssel ohne "@Kennung" (für Beschriftungen und die Reihenfolge in Meldungen) */
+function baseKey(key) {
+  const text = String(key), at = text.indexOf("@");
+  return at < 0 ? text : text.slice(0, at);
+}
+
 const SAVE_ERROR_TEXT = "Speichern fehlgeschlagen: Die letzten Änderungen liegen nur auf dieser Seite und gehen beim Schließen verloren. Bitte jetzt ein Backup speichern.";
 
 const saveFailures = new Set(); // Speicher-Schlüssel, deren letzter Schreibversuch fehlschlug
@@ -1792,9 +2023,11 @@ function refreshBanner() {
    Erfolgsmeldungen ("gespeichert") dürfen erst nach true erscheinen. Das Banner bleibt, solange
    IRGENDEIN Schlüssel noch fehlschlägt — ein erfolgreicher kleiner Schreibvorgang versteckt es nicht. */
 async function persist(key, value) {
-  const ok = await storageSet(key, value);
-  if (ok) saveFailures.delete(key); else saveFailures.add(key);
+  const real = profileKey(key); // die Person gilt zum Zeitpunkt des Aufrufs, auch wenn das Schreiben etwas dauert
+  const ok = await storageSet(real, value);
+  if (ok) saveFailures.delete(real); else saveFailures.add(real);
   refreshBanner();
+  if (ok) noteLocalChange(real); // eigene Änderung: später von allein abgleichen (siehe 6f)
   return ok;
 }
 
@@ -1803,8 +2036,10 @@ async function persist(key, value) {
    Übernehmen etwas verloren (Müll-Elemente, ungültige Zahlen, fremde Felder), merkt sich die App den ORIGINALTEXT und
    legt beim Start eine Kopie davon ab (secureOriginals) — bevor ein späteres Speichern ihn überschreibt. Die Kopien
    bleiben, bis man sie löscht (die letzten MAX_RESCUES); herunterladbar über das Banner bzw. die Karte
-   "Gesicherte Originaldaten" in der Übersicht. */
-const STORAGE_LABELS = { // Reihenfolge = Reihenfolge in Meldungen
+   "Gesicherte Originaldaten" in der Übersicht. Mit mehreren Personen gilt das für die Daten der Person, die gerade
+   geladen wird (Schlüssel mit "@Kennung"), und für die Personenliste selbst. */
+const STORAGE_LABELS = { // Reihenfolge = Reihenfolge in Meldungen (Schlüssel einer Person: ohne "@Kennung", siehe baseKey)
+  [PROFILES_KEY]: "Personen",
   [STORAGE_KEY]: "Trainingsverlauf", [TECH_LINKS_KEY]: "Links", [TECH_THRESHOLDS_KEY]: "Ziel-Wiederholungen", [EXAM_TARGET_KEY]: "Prüfungsziel",
 };
 
@@ -1814,14 +2049,16 @@ function rememberOriginal(key, raw) {
 }
 
 /* Liest und prüft einen gespeicherten Wert. check(geparster Wert) liefert { value, lossy } oder null, wenn die Form
-   nicht stimmt; lossy = beim Übernehmen geht etwas verloren. Rückgabe: der geprüfte Wert, null wenn nichts Brauchbares da ist. */
-async function loadChecked(key, check) {
-  const raw = await storageGet(key);
-  if (raw == null || raw === "") return null; // noch nie gespeichert
+   nicht stimmt; lossy = beim Übernehmen geht etwas verloren. Rückgabe: der geprüfte Wert, null wenn nichts Brauchbares da ist.
+   id = Person, deren Daten gelesen werden (Vorgabe: die aktive). Gelesen wird nur — die Anzeige ändert sich dabei nicht. */
+async function loadChecked(key, check, id = activeProfileId) {
+  const real = profileKey(key, id);
+  const raw = await storageGet(real);
+  if (raw == null || raw === "") return null; // noch nie gespeichert (oder geleert, siehe storageRemove)
   let checked = null;
   try { checked = check(JSON.parse(raw)); } catch (e) { /* kaputter Text: checked bleibt null */ }
-  if (!checked) unreadableKeys.add(key);
-  if (!checked || checked.lossy) rememberOriginal(key, raw);
+  if (!checked) unreadableKeys.add(real);
+  if (!checked || checked.lossy) rememberOriginal(real, raw);
   return checked ? checked.value : null;
 }
 
@@ -1846,7 +2083,7 @@ async function secureOriginals() {
   const savedAt = new Date().toISOString();
   const fresh = pendingOriginals
     .filter((o) => !rescueRecords.some((r) => r.key === o.key && r.raw === o.raw))
-    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
+    .sort((a, b) => order.indexOf(baseKey(a.key)) - order.indexOf(baseKey(b.key)))
     .map((o) => ({ key: o.key, savedAt, raw: o.raw }));
   pendingOriginals = [];
   if (!fresh.length) return true;
@@ -1861,20 +2098,51 @@ async function secureOriginals() {
 /* Hinweis im Banner, wenn beim Laden etwas gar nicht gelesen werden konnte. secured = false: die Kopie ließ sich nicht ablegen. */
 function announceUnreadable(secured) {
   if (!unreadableKeys.size) return;
-  const areas = Object.keys(STORAGE_LABELS).filter((k) => unreadableKeys.has(k)).map((k) => STORAGE_LABELS[k]).join(", ");
+  const bases = new Set([...unreadableKeys].map(baseKey));
+  const areas = Object.keys(STORAGE_LABELS).filter((k) => bases.has(k)).map((k) => STORAGE_LABELS[k]).join(", ");
   rescueNotice = secured
     ? `Gespeicherte Daten konnten nicht gelesen werden (${areas}). Die App startet damit leer; die Originaldaten sind gesichert.`
     : `Gespeicherte Daten konnten nicht gelesen werden (${areas}) und ließen sich nicht sichern. Bitte jetzt die Originaldaten herunterladen — beim nächsten Speichern werden sie überschrieben.`;
   refreshBanner();
 }
 
-async function loadLog() {
-  const entries = await loadChecked(STORAGE_KEY, (parsed) => {
-    if (!Array.isArray(parsed)) return null;
-    const objects = parsed.filter(isPlainObject); // einzelne beschädigte Elemente (null, Text, Zahlen) stören den Rest nicht
-    return { value: objects.map(withCurrentTechnique), lossy: objects.length < parsed.length }; // IDs/Namen auf Stand des Programms
-  });
-  log = entries || [];
+/* Die vier read…-Funktionen lesen die Daten EINER Person und geben sie zurück, ohne etwas zu verändern; erst
+   applyPersonData() übernimmt sie (beim Wechsel in einem Zug, siehe activateProfile). */
+/* Regeln für gespeicherte Daten (Laden aus dem Speicher UND Prüfen der Daten vom Server: dieselben Funktionen, damit
+   "auf dem Server gespeichert -> wieder abgeholt" nie etwas verändert, das lokal gültig war). Jede liefert
+   { value, lossy } oder null, wenn die Form grundsätzlich nicht stimmt. */
+function cleanLogList(parsed) {
+  if (!Array.isArray(parsed)) return null;
+  const objects = parsed.filter(isPlainObject); // einzelne beschädigte Elemente (null, Text, Zahlen) stören den Rest nicht
+  return { value: objects.map(withCurrentTechnique), lossy: objects.length < parsed.length }; // IDs/Namen auf Stand des Programms
+}
+
+function cleanLinksStored(parsed) {
+  if (!isPlainObject(parsed)) return null;
+  const value = withCurrentIds(parsed);
+  return { value, lossy: Object.keys(value).length < Object.keys(parsed).length }; // doppelte/gefährliche Schlüssel fielen weg
+}
+
+function cleanThresholdsStored(parsed) {
+  if (!isPlainObject(parsed)) return null;
+  const byId = withCurrentIds(parsed);
+  const value = {}; // nur ganze Zahlen von 1 bis MAX_THRESHOLD (sonst würde aus Prozent/Zählern "NaN")
+  Object.keys(byId).forEach((k) => { if (Number.isInteger(byId[k]) && byId[k] >= 1 && byId[k] <= MAX_THRESHOLD) value[k] = byId[k]; });
+  return { value, lossy: Object.keys(value).length < Object.keys(parsed).length };
+}
+
+function cleanExamTargetStored(parsed) {
+  if (!isPlainObject(parsed)) return null;
+  const value = cleanExamTarget(parsed);
+  const foreign = Object.keys(parsed).some((k) => !EXAM_TARGET_FIELDS.includes(k)); // fremde Felder gingen beim Speichern verloren
+  // Verlust = ein Wert war da, ist aber unbrauchbar (leer und 0 bei Mindestmonate heißen nur "keine Vorgabe")
+  const dropped = EXAM_TARGET_FIELDS.some((k) => value[k] === null && parsed[k] != null && parsed[k] !== "" && !(k === "minMonths" && parsed[k] === 0));
+  return { value, lossy: foreign || dropped };
+}
+
+async function readLog(id) {
+  const entries = await loadChecked(STORAGE_KEY, cleanLogList, id);
+  return entries || [];
 }
 
 async function saveLog() { return persist(STORAGE_KEY, JSON.stringify(log)); }
@@ -1922,41 +2190,46 @@ function cleanExamTarget(t) {
   };
 }
 
-async function loadExamTarget() {
-  const target = await loadChecked(EXAM_TARGET_KEY, (parsed) => {
-    if (!isPlainObject(parsed)) return null;
-    const value = cleanExamTarget(parsed);
-    const foreign = Object.keys(parsed).some((k) => !EXAM_TARGET_FIELDS.includes(k)); // fremde Felder gingen beim Speichern verloren
-    // Verlust = ein Wert war da, ist aber unbrauchbar (leer und 0 bei Mindestmonate heißen nur "keine Vorgabe")
-    const dropped = EXAM_TARGET_FIELDS.some((k) => value[k] === null && parsed[k] != null && parsed[k] !== "" && !(k === "minMonths" && parsed[k] === 0));
-    return { value, lossy: foreign || dropped };
-  });
-  if (target) examTarget = target;
+function emptyExamTarget() { return { kyu: null, date: null, currentKyuSince: null, minMonths: null }; }
+
+async function readExamTarget(id) {
+  const target = await loadChecked(EXAM_TARGET_KEY, cleanExamTargetStored, id);
+  return target || emptyExamTarget();
 }
 
 async function saveExamTarget() { return persist(EXAM_TARGET_KEY, JSON.stringify(examTarget)); }
 
 /* Referenz-Links: optionaler Video-/Erklär-Link pro Technik, teilbar per QR-Code */
-async function loadTechLinks() {
-  const links = await loadChecked(TECH_LINKS_KEY, (parsed) => {
-    if (!isPlainObject(parsed)) return null;
-    const value = withCurrentIds(parsed);
-    return { value, lossy: Object.keys(value).length < Object.keys(parsed).length }; // doppelte/gefährliche Schlüssel fielen weg
-  });
-  if (links) techLinks = links;
+async function readTechLinks(id) {
+  const links = await loadChecked(TECH_LINKS_KEY, cleanLinksStored, id);
+  return links || {};
 }
 
 async function saveTechLinks() { return persist(TECH_LINKS_KEY, JSON.stringify(techLinks)); }
 
-async function loadTechThresholds() {
-  const thresholds = await loadChecked(TECH_THRESHOLDS_KEY, (parsed) => {
-    if (!isPlainObject(parsed)) return null;
-    const byId = withCurrentIds(parsed);
-    const value = {}; // nur ganze Zahlen von 1 bis MAX_THRESHOLD (sonst würde aus Prozent/Zählern "NaN")
-    Object.keys(byId).forEach((k) => { if (Number.isInteger(byId[k]) && byId[k] >= 1 && byId[k] <= MAX_THRESHOLD) value[k] = byId[k]; });
-    return { value, lossy: Object.keys(value).length < Object.keys(parsed).length };
-  });
-  if (thresholds) techThresholds = thresholds;
+async function readTechThresholds(id) {
+  const thresholds = await loadChecked(TECH_THRESHOLDS_KEY, cleanThresholdsStored, id);
+  return thresholds || {};
+}
+
+/* Alle vier Bereiche einer Person lesen / als Stand der App übernehmen (die Übernahme geschieht ohne await) */
+async function readPersonData(id) {
+  const [entries, target, links, thresholds, sync] = await Promise.all([readLog(id), readExamTarget(id), readTechLinks(id), readTechThresholds(id), readSyncState(id)]);
+  return { log: entries, examTarget: target, techLinks: links, techThresholds: thresholds, sync }; // sync: die Verbindung dieser Person (Abschnitt 6e)
+}
+
+function applyPersonData(id, data) {
+  activeProfileId = id;
+  log = data.log;
+  examTarget = data.examTarget;
+  techLinks = data.techLinks;
+  techThresholds = data.techThresholds;
+  syncState = data.sync.state;
+  syncUnreadable = data.sync.unreadable;
+  syncFailures = 0;
+  cancelAutoSync(); // ein geplanter Abgleich gehörte zur vorherigen Person
+  setSyncStatus({ phase: syncState ? "idle" : "off", at: null, code: null, message: "", info: null });
+  if (syncState) scheduleAutoSync("Personenwechsel", 400);
 }
 
 async function saveTechThresholds() { return persist(TECH_THRESHOLDS_KEY, JSON.stringify(techThresholds)); }
@@ -2168,6 +2441,1136 @@ function importDataFile(file) {
 }
 
 /* ======================================================================
+   6c. PERSONEN (Profile): mehrere Personen auf einem Gerät, Daten strikt getrennt
+   Die Personenliste liegt unter PROFILES_KEY. Jede Person hat eine Kennung ("main" oder "p" + 8 Zeichen) — nie aus dem
+   Namen abgeleitet, damit Umbenennen nichts verschiebt und Namen nie als Schlüssel dienen. Verlauf, Links,
+   Ziel-Wiederholungen und Prüfungsziel liegen je Person unter eigenen Schlüsseln (profileKey). Ein Wechsel liest die
+   Daten der neuen Person zuerst vollständig ein und übernimmt sie dann in EINEM Schritt ohne await — dazwischen kann
+   keine Eingabe auf halbem Stand speichern. Der Wechsel selbst schreibt nur die Personenliste, nie Personendaten.
+   ====================================================================== */
+/* Zeichen, die in Namen zu Leerzeichen werden (Tabulator, Zeilenumbrüche, Zeilen-/Absatztrenner) bzw. ganz wegfallen
+   (Steuerzeichen, unsichtbare Umlenker und Nullbreiten-Zeichen). Als Zahlen geschrieben, damit die Datei lesbar bleibt.
+   Erhalten bleiben bewusst U+200C/U+200D (nötig für Emoji-Folgen und manche Schriften). */
+const PROFILE_SPACE_CODES = [0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x85, 0x2028, 0x2029];
+function isHiddenCodePoint(c) {
+  return c <= 0x1F || (c >= 0x7F && c <= 0x9F) || c === 0x200B || c === 0x200E || c === 0x200F ||
+    (c >= 0x202A && c <= 0x202E) || c === 0x2060 || (c >= 0x2066 && c <= 0x2069) || c === 0xFEFF;
+}
+
+/* Name aufräumen: Steuerzeichen und unsichtbare Umlenker raus, Tabulator/Zeilenumbruch = Leerzeichen, Leerraum
+   zusammenfassen, Unicode-Form NFC. Die Länge prüft checkProfileName. */
+function cleanProfileName(raw) {
+  if (typeof raw !== "string") return "";
+  let out = "";
+  for (const ch of raw) { // Zeichen für Zeichen (Unicode-Zeichen, nicht UTF-16-Einheiten)
+    const c = ch.codePointAt(0);
+    if (PROFILE_SPACE_CODES.includes(c)) out += " ";
+    else if (!isHiddenCodePoint(c)) out += ch;
+  }
+  return out.normalize("NFC").replace(/\s+/g, " ").trim();
+}
+
+const profileNameLength = (name) => [...name].length;
+
+/* Vergleichsform für "gibt es schon": Groß-/Kleinschreibung und Unicode-Schreibweisen (z.B. ü als u + Trema) zählen nicht */
+const profileNameKey = (name) => name.normalize("NFKC").toLowerCase();
+
+/* Macht einen Namen eindeutig ("Lena" -> "Lena 2"), ohne die Höchstlänge zu überschreiten */
+function uniqueProfileName(name, takenKeys) {
+  if (!takenKeys.has(profileNameKey(name))) return name;
+  for (let n = 2; n < 1000; n++) {
+    const suffix = ` ${n}`;
+    const candidate = [...name].slice(0, MAX_PROFILE_NAME - suffix.length).join("").trim() + suffix;
+    if (!takenKeys.has(profileNameKey(candidate))) return candidate;
+  }
+  return name;
+}
+
+/* Prüft eine gespeicherte Personenliste (gleiche Regeln wie bei den anderen Daten: Brauchbares bleibt, Unbrauchbares
+   fällt weg, der Originaltext wird gesichert). null = keine einzige gültige Person. */
+function cleanProfiles(parsed) {
+  if (!isPlainObject(parsed) || !Array.isArray(parsed.list)) return null;
+  const list = [], ids = new Set(), names = new Set();
+  let lossy = parsed.v !== PROFILES_VERSION;
+  parsed.list.forEach((p) => {
+    if (!isPlainObject(p) || typeof p.id !== "string" || !PROFILE_ID_PATTERN.test(p.id) || ids.has(p.id) || list.length >= MAX_PROFILES) { lossy = true; return; }
+    let name = cleanProfileName(p.name) || FALLBACK_PROFILE_NAME;
+    if (profileNameLength(name) > MAX_PROFILE_NAME) name = [...name].slice(0, MAX_PROFILE_NAME).join("").trim();
+    name = uniqueProfileName(name, names);
+    if (name !== p.name) lossy = true;
+    const stamped = typeof p.createdAt === "string" && p.createdAt.length <= 40 && !Number.isNaN(Date.parse(p.createdAt));
+    if (!stamped && p.createdAt != null && p.createdAt !== "") lossy = true; // ein vorhandener, aber unbrauchbarer Zeitstempel
+    ids.add(p.id);
+    names.add(profileNameKey(name));
+    list.push({ id: p.id, name, createdAt: stamped ? p.createdAt : "" });
+  });
+  if (!list.length) return null;
+  const active = typeof parsed.active === "string" && ids.has(parsed.active) ? parsed.active : list[0].id;
+  if (active !== parsed.active) lossy = true;
+  return { value: { list, active }, lossy };
+}
+
+/* Beim Start: Personenliste lesen. Ohne (oder mit unbrauchbarer) Liste gibt es genau eine Person "Ich" = "main" —
+   die Daten der Version 2.1 liegen unter ihren bisherigen Schlüsseln und laufen unverändert weiter. */
+async function loadProfiles() {
+  const reg = await loadChecked(PROFILES_KEY, cleanProfiles);
+  profiles = reg ? reg.list : [{ id: MAIN_PROFILE_ID, name: DEFAULT_PROFILE_NAME, createdAt: "" }];
+  activeProfileId = reg ? reg.active : MAIN_PROFILE_ID;
+}
+
+/* Schreibt die Personenliste. Bewusst ohne Fehlerbanner: wer ändert (anlegen, umbenennen, löschen), bekommt bei einem
+   Fehlschlag eine eigene Meldung und die Änderung unterbleibt — es gibt dann nichts, was nur im Arbeitsspeicher läge. */
+async function writeProfiles(list, active) {
+  return storageSet(PROFILES_KEY, JSON.stringify({
+    v: PROFILES_VERSION, active,
+    list: list.map((p) => ({ id: p.id, name: p.name, createdAt: p.createdAt })),
+  }));
+}
+
+function newProfileId() {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const bytes = new Uint8Array(8);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    const id = "p" + Array.from(bytes, (b) => chars[b % chars.length]).join("");
+    if (!profiles.some((p) => p.id === id)) return id;
+  }
+  return "p" + Date.now().toString(36).slice(-8).padStart(8, "0"); // praktisch unerreichbar
+}
+
+/* Prüft einen eingegebenen Namen. Ergebnis { name } oder { error }; exceptId = die Person, die gerade umbenannt wird. */
+function checkProfileName(input, exceptId) {
+  const name = cleanProfileName(input);
+  if (!name) return { error: "Bitte einen Namen eingeben." };
+  if (profileNameLength(name) > MAX_PROFILE_NAME) return { error: `Der Name ist zu lang (höchstens ${MAX_PROFILE_NAME} Zeichen).` };
+  const key = profileNameKey(name);
+  if (profiles.some((p) => p.id !== exceptId && profileNameKey(p.name) === key)) return { error: "Diesen Namen gibt es schon." };
+  return { name };
+}
+
+/* Meldung im Fenster (rot, unter der Liste); ist das Fenster zu (Aufruf von außen), als Hinweis unten im Bild */
+function profileProblem(message) {
+  const box = document.getElementById("profile-error");
+  if (isProfileModalOpen() && box) { box.textContent = message; box.hidden = false; }
+  else showToast(message, 5200);
+}
+
+function clearProfileError() {
+  const box = document.getElementById("profile-error");
+  if (box) { box.hidden = true; box.textContent = ""; }
+}
+
+/* Ließ sich etwas von der aktiven Person nicht speichern, liegt es nur im Arbeitsspeicher — ein Wechsel würde es verlieren. */
+function hasUnsavedPersonData() {
+  return [...saveFailures].some((k) => PERSON_KEYS.includes(baseKey(k)));
+}
+const UNSAVED_SWITCH_TEXT = "Wechsel nicht möglich: Die letzten Änderungen dieser Person sind noch nicht gespeichert. Bitte zuerst ein Backup speichern.";
+
+/* Alles, was nur zur bisherigen Person gehört, zurücksetzen: Entwürfe, Filter, aufgeklappte Formulare, Auswahl im
+   Sonnensystem und im Trainingstag-Fenster; andere Fenster schließen. Der Tab bleibt, die Seite beginnt oben. */
+function resetWorkState(keepProfileModal) {
+  rowDrafts = {}; openFormId = null; openLinkId = null;
+  historyFilter = "Alle"; historyTrainingsartFilter = "Alle"; historySearch = "";
+  solarLevel = "overview"; solarFamily = null; solarDetailTechnik = null;
+  sessionSelected = new Set(); sessionSearch = ""; sessionKyuFilter = null;
+  const search = document.getElementById("search-input");
+  if (search) search.value = "";
+  closeSessionModal();
+  closeTerms();
+  if (!keepProfileModal) closeProfileModal();
+  document.body.style.overflow = isProfileModalOpen() ? "hidden" : "";
+}
+
+/* Macht eine Person zur aktiven: Daten lesen (und unlesbare Originale sichern, BEVOR etwas gespeichert werden kann),
+   dann in einem Zug übernehmen und neu zeichnen. Die Meldungen im Banner gelten immer nur für die gerade geladene Person. */
+async function activateProfile(id, keepProfileModal) {
+  unreadableKeys.clear();
+  pendingOriginals = [];
+  const data = await readPersonData(id);
+  const secured = await secureOriginals();
+  /* ab hier kein await mehr */
+  applyPersonData(id, data);
+  resetWorkState(keepProfileModal);
+  rescueNotice = null;
+  announceUnreadable(secured);
+  refreshBanner();
+  renderProfileChip();
+  renderAll();
+  window.scrollTo(0, 0);
+}
+
+/* Zu einer anderen Person wechseln. Schreibt nur die Personenliste (wer aktiv ist), nie Personendaten. */
+async function switchProfile(id) {
+  if (profileBusy) return false;
+  const person = profiles.find((p) => p.id === id);
+  if (!person) return false;
+  if (id === activeProfileId) { closeProfileModal(); return true; }
+  if (hasUnsavedPersonData()) { profileProblem(UNSAVED_SWITCH_TEXT); return false; }
+  profileBusy = true;
+  try {
+    const remembered = await writeProfiles(profiles, id); // schlägt das fehl, wechselt die Person trotzdem — nur die Merkung fehlt
+    await activateProfile(id, false);
+    showToast(`Person gewechselt: ${person.name}.${remembered ? "" : " (Die Auswahl ließ sich nicht merken.)"}`);
+    return true;
+  } finally {
+    profileBusy = false;
+  }
+}
+
+/* Neue, leere Person anlegen und zu ihr wechseln. Gibt ihre Kennung zurück, bei einer Ablehnung null. */
+async function addProfile(input) {
+  if (profileBusy) return null;
+  if (hasUnsavedPersonData()) { profileProblem(UNSAVED_SWITCH_TEXT); return null; }
+  if (profiles.length >= MAX_PROFILES) { profileProblem(`Es sind höchstens ${MAX_PROFILES} Personen möglich.`); return null; }
+  const checked = checkProfileName(input, null);
+  if (checked.error) { profileProblem(checked.error); return null; }
+  profileBusy = true;
+  try {
+    const person = { id: newProfileId(), name: checked.name, createdAt: new Date().toISOString() };
+    const list = profiles.concat(person);
+    if (!(await writeProfiles(list, person.id))) { profileProblem("Die Person konnte nicht angelegt werden: Der Speicher ist voll oder gesperrt."); return null; }
+    profiles = list;
+    await activateProfile(person.id, false);
+    showToast(`Person angelegt: ${person.name}.`);
+    return person.id;
+  } finally {
+    profileBusy = false;
+  }
+}
+
+/* Umbenennen: nur der Name ändert sich, Kennung und Daten bleiben. */
+async function renameProfile(id, input) {
+  if (profileBusy) return false;
+  const person = profiles.find((p) => p.id === id);
+  if (!person) return false;
+  const checked = checkProfileName(input, id);
+  if (checked.error) { profileProblem(checked.error); return false; }
+  profileBusy = true;
+  try {
+    if (checked.name !== person.name) {
+      const list = profiles.map((p) => (p.id === id ? { id: p.id, name: checked.name, createdAt: p.createdAt } : p));
+      if (!(await writeProfiles(list, activeProfileId))) { profileProblem("Der Name konnte nicht gespeichert werden: Der Speicher ist voll oder gesperrt."); return false; }
+      profiles = list;
+      renderProfileChip();
+      if (rescueRecords.length) renderUebersicht(); // die Karte "Gesicherte Originaldaten" nennt Personen beim Namen
+    }
+    profileRenameId = null;
+    clearProfileError();
+    renderProfileList(`.profile-row[data-id="${id}"] [data-action="profile-rename"]`);
+    return true;
+  } finally {
+    profileBusy = false;
+  }
+}
+
+/* Anzahl der Einträge einer Person (null = ihre Verlaufsdaten sind nicht lesbar) */
+async function profileEntryCount(id) {
+  if (id === activeProfileId) return log.length;
+  const raw = await storageGet(profileKey(STORAGE_KEY, id));
+  if (raw == null || raw === "") return 0;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isPlainObject).length : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function deleteQuestion(person, count) {
+  const what = count === null
+    ? "Ihre gespeicherten Daten sind nicht lesbar und werden mit gelöscht."
+    : `Gelöscht werden ${plural(count, "Eintrag", "Einträge")} sowie Links, Ziel-Wiederholungen und Prüfungsziel dieser Person.`;
+  return `„${person.name}“ von diesem Gerät löschen?\n\n${what} Das lässt sich nicht rückgängig machen.\n\nTipp: Ein Backup geht über „Als Datei exportieren“ in der Übersicht (mit dieser Person ausgewählt).`;
+}
+
+/* Löschen: erst die Personenliste ändern (schlägt das fehl, bleibt alles wie es war), dann die Daten der Person entfernen.
+   Die letzte Person lässt sich nicht löschen. War es die aktive, wird die erste verbleibende aktiv. */
+async function deleteProfile(id) {
+  if (profileBusy || profiles.length <= 1) return false;
+  const person = profiles.find((p) => p.id === id);
+  if (!person) return false;
+  const count = await profileEntryCount(id);
+  if (!confirm(deleteQuestion(person, count))) return false;
+  if (profileBusy) return false; // währenddessen hat etwas anderes begonnen
+  profileBusy = true;
+  try {
+    const list = profiles.filter((p) => p.id !== id);
+    const wasActive = id === activeProfileId;
+    const next = wasActive ? list[0].id : activeProfileId;
+    if (!(await writeProfiles(list, next))) { profileProblem("Löschen nicht möglich: Der Speicher ist voll oder gesperrt."); return false; }
+    const removed = await Promise.all([...PERSON_KEYS.map((k) => storageRemove(profileKey(k, id))), storageRemove(syncKeyFor(id))]);
+    PERSON_KEYS.forEach((k) => saveFailures.delete(profileKey(k, id)));
+    saveFailures.delete(syncKeyFor(id));
+    profiles = list;
+    if (profileRenameId === id) profileRenameId = null;
+    if (wasActive) await activateProfile(next, true);
+    renderProfileList("#profile-title");
+    showToast(`Person gelöscht: ${person.name}.`);
+    if (removed.some((ok) => !ok)) showError("Die Person wurde entfernt, aber nicht alle ihre Daten ließen sich aus dem Speicher löschen.");
+    return true;
+  } finally {
+    profileBusy = false;
+  }
+}
+
+/* ----- Personen: Kopfzeilen-Knopf und Fenster ----- */
+function isProfileModalOpen() {
+  const overlay = document.getElementById("profile-modal-overlay");
+  return !!overlay && !overlay.hidden;
+}
+
+function renderProfileChip() {
+  const chip = document.getElementById("profile-chip");
+  if (!chip) return;
+  const person = profiles.find((p) => p.id === activeProfileId) || profiles[0];
+  chip.querySelector(".profile-chip-name").textContent = person.name;
+  chip.setAttribute("aria-label", `Person wechseln, aktuell ${person.name}`);
+}
+
+const PROFILE_ICON_EDIT = '<svg class="profile-btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 16l.8-3.6 8.8-8.8a1.5 1.5 0 0 1 2.1 0l.7.7a1.5 1.5 0 0 1 0 2.1L7.6 15.2z"/><path d="M11.8 5.4l2.8 2.8"/></svg>';
+const PROFILE_ICON_DELETE = '<svg class="profile-btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 6h11M8 6V4.5h4V6M6 6l.6 9.5h6.8L14 6M8.6 9v4M11.4 9v4"/></svg>';
+
+function profileRowHTML(p) {
+  const active = p.id === activeProfileId;
+  if (profileRenameId === p.id) {
+    return `
+      <li class="profile-row editing" data-id="${esc(p.id)}">
+        <input type="text" class="profile-rename-input" value="${esc(p.name)}" aria-label="Neuer Name für ${esc(p.name)}" aria-describedby="profile-error"
+          autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" />
+        <button type="button" class="profile-icon-btn" data-action="profile-rename-save" aria-label="Namen speichern">✓</button>
+        <button type="button" class="profile-icon-btn" data-action="profile-rename-cancel" aria-label="Umbenennen abbrechen">✕</button>
+      </li>`;
+  }
+  return `
+      <li class="profile-row${active ? " active" : ""}" data-id="${esc(p.id)}">
+        <button type="button" class="profile-select"${active ? ' aria-current="true"' : ""}><span class="profile-select-name">${esc(p.name)}</span>${active ? '<span class="profile-check" aria-hidden="true">✓</span>' : ""}</button>
+        <button type="button" class="profile-icon-btn" data-action="profile-rename" aria-label="Umbenennen: ${esc(p.name)}">${PROFILE_ICON_EDIT}</button>
+        <button type="button" class="profile-icon-btn danger" data-action="profile-delete" aria-label="Löschen: ${esc(p.name)}"${profiles.length <= 1 ? " disabled" : ""}>${PROFILE_ICON_DELETE}</button>
+      </li>`;
+}
+
+function profileModalHTML() {
+  return `
+    <div class="modal-panel profile-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <div class="modal-header">
+        <h2 id="profile-title" tabindex="-1">Personen</h2>
+        <button type="button" class="modal-close profile-close" data-action="profile-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="profile-hint">Jede Person hat ihren eigenen Trainingsverlauf, eigene Links, Ziel-Wiederholungen und ein eigenes Prüfungsziel. ${syncServer.available ? "Jede Person kann sich einzeln mit dem Server abgleichen (Karte „Abgleich“ in der Übersicht)." : "Alles bleibt auf diesem Gerät."}</p>
+        <ul class="profile-list" id="profile-list">${profiles.map(profileRowHTML).join("")}</ul>
+        <p id="profile-error" class="profile-error" role="alert" hidden></p>
+        <div class="profile-new">
+          <label class="profile-new-label" for="profile-new-name">Neue Person</label>
+          <div class="profile-new-row">
+            <input type="text" id="profile-new-name" class="profile-input" placeholder="Name" aria-describedby="profile-error"
+              autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" />
+            <button type="button" class="profile-add-btn" data-action="profile-add">Anlegen</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* Nur die Liste neu aufbauen (nicht das ganze Fenster: sonst liefe die Einblend-Bewegung bei jeder Aktion erneut);
+   focusSelector = was danach den Fokus bekommt (der gedrückte Knopf kann verschwunden sein). */
+function renderProfileList(focusSelector) {
+  const list = document.getElementById("profile-list");
+  if (!list) return;
+  list.innerHTML = profiles.map(profileRowHTML).join("");
+  const overlay = document.getElementById("profile-modal-overlay");
+  const target = focusSelector && overlay.querySelector(focusSelector);
+  if (target) target.focus();
+}
+
+function openProfileModal() {
+  profileRenameId = null;
+  const overlay = document.getElementById("profile-modal-overlay");
+  overlay.innerHTML = profileModalHTML();
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  document.getElementById("profile-title").focus();
+}
+
+function closeProfileModal() {
+  const overlay = document.getElementById("profile-modal-overlay");
+  if (!overlay || overlay.hidden) return;
+  overlay.hidden = true;
+  overlay.innerHTML = "";
+  profileRenameId = null;
+  document.body.style.overflow = "";
+  const chip = document.getElementById("profile-chip");
+  if (chip) chip.focus();
+}
+
+function startProfileRename(id) {
+  profileRenameId = id;
+  clearProfileError();
+  renderProfileList();
+  const input = document.querySelector(`#profile-modal-overlay .profile-row[data-id="${id}"] .profile-rename-input`);
+  if (input) { input.focus(); input.select(); }
+}
+
+function cancelProfileRename(id) {
+  profileRenameId = null;
+  clearProfileError();
+  renderProfileList(`.profile-row[data-id="${id}"] [data-action="profile-rename"]`);
+}
+
+function submitProfileRename(id) {
+  const input = document.querySelector(`#profile-modal-overlay .profile-row[data-id="${id}"] .profile-rename-input`);
+  if (input) renameProfile(id, input.value);
+}
+
+function submitNewProfile() {
+  const input = document.getElementById("profile-new-name");
+  if (input) addProfile(input.value); // bei Erfolg schließt das Fenster; sonst steht die Meldung im Fenster und die Eingabe bleibt
+}
+
+/* Tab bleibt im Fenster (Fokus-Falle) */
+function trapProfileTab(e) {
+  const panel = document.querySelector("#profile-modal-overlay .profile-panel");
+  if (!panel) return;
+  const items = [...panel.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length > 0);
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1], a = document.activeElement;
+  if (e.shiftKey && (a === first || !panel.contains(a) || a === document.getElementById("profile-title"))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (a === last || !panel.contains(a))) { e.preventDefault(); first.focus(); }
+}
+
+/* ======================================================================
+   6d. ABGLEICH MIT DEM SERVER — Kern (reine Funktionen, ohne Oberfläche und ohne Netz)
+   Ein "Stand" (doc) ist { schemaVersion, log, techLinks, techThresholds, examTarget } — dieselben vier Bereiche wie im
+   Backup. Zusammengeführt wird nach dem Drei-Wege-Prinzip: base = der zuletzt mit dem Server abgeglichene Stand,
+   local = der Stand auf diesem Gerät, remote = der Stand auf dem Server. Je Schlüssel (Eintrags-ID, Technik-ID, Feld
+   des Prüfungsziels):  local = remote -> local;  nur remote geändert -> remote (auch ein Löschen);  nur local geändert
+   -> local (auch ein Löschen);  beide geändert und verschieden -> Konflikt: wurde auf einer Seite gelöscht und auf der
+   anderen geändert, bleibt die geänderte Fassung (nichts geht verloren); sonst gewinnt bei Links das spätere updatedAt,
+   bei allem anderen der lokale Stand. Das Ergebnis ist von der Reihenfolge der Schlüssel unabhängig; der Verlauf
+   ist nach Datum, createdAt (beide absteigend) und ID sortiert, damit alle Geräte dieselbe Reihenfolge haben.
+   ====================================================================== */
+/* Wie JSON.stringify, aber mit sortierten Schlüsseln (auch verschachtelt): gleiche Daten -> gleicher Text. */
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") {
+    const text = JSON.stringify(value);
+    return text === undefined ? "null" : text;
+  }
+  if (Array.isArray(value)) return "[" + value.map((v) => stableStringify(v)).join(",") + "]";
+  const keys = Object.keys(value).filter((k) => value[k] !== undefined).sort();
+  return "{" + keys.map((k) => JSON.stringify(k) + ":" + stableStringify(value[k])).join(",") + "}";
+}
+
+function docsEqual(a, b) { return stableStringify(a) === stableStringify(b); }
+
+function emptySyncDoc() {
+  return { schemaVersion: SCHEMA_VERSION, log: [], techLinks: {}, techThresholds: {}, examTarget: emptyExamTarget() };
+}
+
+/* Reihenfolge im Verlauf: Datum absteigend, dann createdAt absteigend, dann ID aufsteigend */
+function compareLogEntries(a, b) {
+  const text = (v) => (typeof v === "string" ? v : ""); // nur Text vergleichen: sonst ist die Reihenfolge bei null/Zahlen/Objekten nicht eindeutig
+  const da = text(a.date), db = text(b.date);
+  if (da !== db) return da < db ? 1 : -1;
+  const ca = text(a.createdAt), cb = text(b.createdAt);
+  if (ca !== cb) return ca < cb ? 1 : -1;
+  const ia = text(a.id), ib = text(b.id);
+  return ia < ib ? -1 : ia > ib ? 1 : 0;
+}
+
+const deepCopy = (v) => JSON.parse(JSON.stringify(v));
+
+/* Fingerabdruck eines Werts: 53-Bit-Hash (cyrb53) des kanonischen Texts + dessen Länge. Gleiche Werte -> gleicher Text. */
+function hashText(text) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+function valueHash(value) {
+  const text = stableStringify(value);
+  return hashText(text).toString(36) + "." + text.length.toString(36);
+}
+
+/* Drei Zuordnungen (Schlüssel -> Wert) zusammenführen. base ist eine Zuordnung Schlüssel -> Fingerabdruck (siehe
+   digestDoc): für "hat sich seit dem letzten Abgleich geändert?" genügt der Vergleich mit dem Fingerabdruck.
+   Rückgabe { map, conflicts }; fehlender Wert = undefined. */
+function mergeKeyed(baseHashes, localMap, remoteMap, prefer) {
+  const keys = new Set([...baseHashes.keys(), ...localMap.keys(), ...remoteMap.keys()]);
+  const sameValue = (x, y) => (x === undefined || y === undefined ? x === y : docsEqual(x, y));
+  const sameAsBase = (x, hash) => (x === undefined || hash === undefined ? x === undefined && hash === undefined : valueHash(x) === hash);
+  const map = new Map();
+  let conflicts = 0;
+  keys.forEach((k) => {
+    const b = baseHashes.get(k), l = localMap.get(k), r = remoteMap.get(k);
+    let v;
+    if (sameValue(l, r)) v = l;
+    else if (sameAsBase(l, b)) v = r;
+    else if (sameAsBase(r, b)) v = l;
+    else { conflicts++; v = l === undefined ? r : r === undefined ? l : prefer(l, r); }
+    if (v !== undefined) map.set(k, deepCopy(v));
+  });
+  return { map, conflicts };
+}
+
+const preferLocalValue = (local) => local;
+const preferLaterLink = (local, remote) =>
+  (typeof remote.updatedAt === "string" && (typeof local.updatedAt !== "string" || remote.updatedAt > local.updatedAt) ? remote : local);
+
+/* Objekt aus einer Zuordnung; auch "__proto__" wird ein ganz gewöhnlicher Schlüssel (kein Eingriff in den Prototyp) */
+function objectFromMap(map) {
+  const obj = {};
+  map.forEach((value, key) => Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true }));
+  return obj;
+}
+
+/* Ein Stand als vier Zuordnungen (Schlüssel -> Wert): Einträge nach Kennung, Links und Ziel-Wiederholungen nach
+   Technik-ID, Prüfungsziel nach Feld (leere Felder zählen als "nicht vorhanden"). Einträge ohne Text-Kennung fehlen hier. */
+function docMaps(doc) {
+  const keyed = (name) => new Map(isPlainObject(doc) && isPlainObject(doc[name]) ? Object.keys(doc[name]).map((k) => [k, doc[name][k]]) : []);
+  return {
+    log: new Map((isPlainObject(doc) && Array.isArray(doc.log) ? doc.log : []).filter((e) => isPlainObject(e) && typeof e.id === "string").map((e) => [e.id, e])),
+    techLinks: keyed("techLinks"),
+    techThresholds: keyed("techThresholds"),
+    examTarget: new Map(EXAM_TARGET_FIELDS
+      .filter((f) => isPlainObject(doc) && isPlainObject(doc.examTarget) && doc.examTarget[f] != null && doc.examTarget[f] !== "")
+      .map((f) => [f, doc.examTarget[f]])),
+  };
+}
+
+/* Digest = Fingerabdruck je Schlüssel statt einer vollen Kopie des Stands (rund 7x weniger Platz). Genau das braucht der
+   Drei-Wege-Abgleich von "base": ob sich ein Wert seit dem letzten Abgleich geändert hat. */
+const DIGEST_MARK = 1;
+function isDigest(x) {
+  return isPlainObject(x) && x.d === DIGEST_MARK && isPlainObject(x.log) && isPlainObject(x.techLinks) && isPlainObject(x.techThresholds) && isPlainObject(x.examTarget);
+}
+
+function digestDoc(doc) {
+  const maps = docMaps(doc);
+  const digest = { d: DIGEST_MARK };
+  ["log", "techLinks", "techThresholds", "examTarget"].forEach((name) => {
+    const part = {};
+    maps[name].forEach((value, key) => Object.defineProperty(part, key, { value: valueHash(value), enumerable: true, writable: true, configurable: true }));
+    digest[name] = part;
+  });
+  return digest;
+}
+
+function digestMaps(digest) {
+  const out = {};
+  ["log", "techLinks", "techThresholds", "examTarget"].forEach((name) => {
+    out[name] = new Map(Object.keys(digest[name]).filter((k) => typeof digest[name][k] === "string").map((k) => [k, digest[name][k]]));
+  });
+  return out;
+}
+
+/* base: ein Stand, ein Digest oder null (noch nie abgeglichen) */
+function mergeDocs(base, local, remote) {
+  const baseHashes = digestMaps(isDigest(base) ? base : digestDoc(base));
+  const L = docMaps(local), R = docMaps(remote);
+  const logPart = mergeKeyed(baseHashes.log, L.log, R.log, preferLocalValue);
+  const linkPart = mergeKeyed(baseHashes.techLinks, L.techLinks, R.techLinks, preferLaterLink);
+  const thresholdPart = mergeKeyed(baseHashes.techThresholds, L.techThresholds, R.techThresholds, preferLocalValue);
+  const targetPart = mergeKeyed(baseHashes.examTarget, L.examTarget, R.examTarget, preferLocalValue);
+  const examTargetResult = emptyExamTarget();
+  targetPart.map.forEach((value, field) => { examTargetResult[field] = value; });
+  return {
+    doc: {
+      schemaVersion: SCHEMA_VERSION,
+      log: [...logPart.map.values()].sort(compareLogEntries),
+      techLinks: objectFromMap(linkPart.map),
+      techThresholds: objectFromMap(thresholdPart.map),
+      examTarget: examTargetResult,
+    },
+    conflicts: logPart.conflicts + linkPart.conflicts + thresholdPart.conflicts + targetPart.conflicts,
+  };
+}
+
+/* ----- Daten vom Server prüfen (sie sind unvertrauenswürdig) ----------------------------------------------------
+   Es gelten dieselben Regeln wie beim Laden aus dem Speicher (cleanLogList & Co.): was die App lokal behalten würde, bleibt;
+   was sie beim Laden verwerfen würde, fällt weg. Eintrag ohne Kennung (Text, nicht leer, höchstens 200 Zeichen; Zahlen werden
+   Text) oder mit doppelter Kennung (die erste gilt) fällt ebenfalls weg. Ein Bereich in falscher Form macht den ganzen Stand
+   unbrauchbar (null) — nie als "leer" lesen, sonst würde ein Abgleich den Server-Stand überschreiben.
+   Ergebnis { doc, dropped, unsupported } oder null. unsupported: Stand aus neuerer App-Version oder mit unbekannten Teilen —
+   so etwas darf diese Version nie zurückschreiben, sonst gingen die fremden Teile verloren. */
+const SYNC_DOC_KEYS = ["schemaVersion", "log", "techLinks", "techThresholds", "examTarget"];
+const MAX_ENTRY_ID = 200;
+
+function syncEntryId(entry) {
+  const id = entry.id;
+  if (typeof id === "string") return id.trim() && id.length <= MAX_ENTRY_ID ? id : null;
+  return Number.isFinite(id) ? String(id) : null;
+}
+
+function sanitizeSyncDoc(raw) {
+  if (!isPlainObject(raw)) return null;
+  const logRaw = raw.log === undefined ? [] : raw.log;
+  const area = (v) => (v === undefined ? {} : isPlainObject(v) ? v : null);
+  const linksRaw = area(raw.techLinks), thresholdsRaw = area(raw.techThresholds), targetRaw = area(raw.examTarget);
+  if (!Array.isArray(logRaw) || !linksRaw || !thresholdsRaw || !targetRaw) return null;
+  let dropped = 0;
+
+  const seen = new Set();
+  const entries = [];
+  logRaw.forEach((item) => {
+    const id = isPlainObject(item) ? syncEntryId(item) : null;
+    if (id === null || seen.has(id)) { dropped++; return; }
+    seen.add(id);
+    const copy = deepCopy(item); // Kopie über JSON: ein eigener Schlüssel "__proto__" bleibt ein gewöhnlicher Schlüssel …
+    delete copy.__proto__;        // … und wird hier entfernt
+    copy.id = id;
+    entries.push(withCurrentTechnique(copy));
+  });
+  entries.sort(compareLogEntries);
+
+  const links = cleanLinksStored(deepCopy(linksRaw)).value;
+  dropped += Object.keys(linksRaw).length - Object.keys(links).length;
+  const thresholds = cleanThresholdsStored(deepCopy(thresholdsRaw)).value;
+  dropped += Object.keys(thresholdsRaw).length - Object.keys(thresholds).length;
+  const examTargetValue = cleanExamTarget(targetRaw);
+  EXAM_TARGET_FIELDS.forEach((k) => {
+    if (examTargetValue[k] === null && targetRaw[k] != null && targetRaw[k] !== "" && !(k === "minMonths" && targetRaw[k] === 0)) dropped++;
+  });
+
+  // Version nur aus Zahl oder Text lesen (Number() auf eine Liste/ein Objekt würde dessen Inhalt in Text umwandeln — und kann abstürzen)
+  const version = typeof raw.schemaVersion === "number" ? raw.schemaVersion : typeof raw.schemaVersion === "string" ? Number(raw.schemaVersion) : 0;
+  const unsupported = version > SCHEMA_VERSION || Object.keys(raw).some((k) => !SYNC_DOC_KEYS.includes(k));
+  return {
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: links, techThresholds: thresholds, examTarget: examTargetValue },
+    dropped,
+    unsupported,
+  };
+}
+
+/* ----- Der Stand dieses Geräts als Abgleich-Stand, und ein zusammengeführter Stand zurück in die App ------------------
+   currentLocalDoc: Kopie des Stands der aktiven Person. Einträge ohne brauchbare Kennung und doppelte Kennungen kommen
+   NICHT hinein (localOnly): sie bleiben auf diesem Gerät erhalten, werden aber nie hochgeladen.
+   applyMergedDoc: übernimmt einen zusammengeführten Stand SYNCHRON (kein await zwischen Prüfen und Übernehmen — danach kann
+   keine Eingabe dazwischenkommen), speichert nur die geänderten Bereiche und zeichnet neu. Liefert true, wenn alles
+   gespeichert werden konnte (sonst warnt das Fehlerbanner, der Stand bleibt im Arbeitsspeicher). */
+function currentLocalDoc() {
+  const seen = new Set();
+  const entries = [];
+  const localOnly = [];
+  log.forEach((entry) => {
+    const id = isPlainObject(entry) ? syncEntryId(entry) : null;
+    if (id === null || seen.has(id)) { localOnly.push(entry); return; }
+    seen.add(id);
+    const copy = deepCopy(entry);
+    copy.id = id;
+    entries.push(copy);
+  });
+  entries.sort(compareLogEntries);
+  return {
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: deepCopy(techLinks), techThresholds: deepCopy(techThresholds), examTarget: deepCopy(examTarget) },
+    localOnly,
+  };
+}
+
+function applyMergedDoc(doc, localOnly) {
+  syncApplying = true; // was hier gespeichert wird, ist KEINE eigene Änderung (sonst löst jeder Abgleich den nächsten aus)
+  const before = currentLocalDoc().doc;
+  const keep = Array.isArray(localOnly) ? localOnly : [];
+  const saves = [];
+  if (!docsEqual(before.log, doc.log)) { log = deepCopy(doc.log).concat(keep); saves.push(saveLog()); }
+  if (!docsEqual(before.techLinks, doc.techLinks)) { techLinks = deepCopy(doc.techLinks); saves.push(saveTechLinks()); }
+  if (!docsEqual(before.techThresholds, doc.techThresholds)) { techThresholds = deepCopy(doc.techThresholds); saves.push(saveTechThresholds()); }
+  if (!docsEqual(before.examTarget, doc.examTarget)) { examTarget = deepCopy(doc.examTarget); saves.push(saveExamTarget()); }
+  if (!saves.length) { syncApplying = false; return Promise.resolve(true); }
+  renderAll();
+  return Promise.all(saves).then((results) => { syncApplying = false; return results.every(Boolean); });
+}
+
+/* ======================================================================
+   6e. ABGLEICH MIT DEM SERVER — Verbindung und Ablauf (Netz, gespeicherter Zustand, Abgleich)
+   ----------------------------------------------------------------------
+   Der Server (Home-Assistant-Baustein, docs/SCHNITTSTELLE.md) liegt unter derselben Adresse wie die Seite: alle Aufrufe
+   gehen an RELATIVE Adressen (/api/aikido_tracker/…) — ohne CORS und ohne Mischinhalt. Wird die Seite als Datei oder von
+   einem anderen Server geöffnet, gibt es keinen Server, und alles bleibt wie bisher.
+   Jede Person der App hat ihre EIGENE Verbindung (Server-Name + Zugangscode) und ihren eigenen Stand des Abgleichs:
+   Schlüssel "aikido-sync" bzw. "aikido-sync@<Kennung>". Sie gehören bewusst NICHT zu PERSON_KEYS: kein Backup, keine
+   Rettungskopie — der Zugangscode darf in keine Datei geraten, die jemand weitergibt.
+     syncState = { v, name, code, rev, base, at, rejected }
+       rev/base = der zuletzt mit dem Server abgeglichene Stand (Versionsnummer und Fingerabdruck, siehe digestDoc). Beides
+       gehört zusammen: fehlt eines, gilt "noch nie abgeglichen" — dann wird vereinigt, nie gelöscht.
+       rejected = der Server hat Name/Zugangscode abgelehnt: es wird nichts mehr versucht, bis man sich neu anmeldet
+       (sonst sperrt der Server nach 10 Fehlversuchen).
+   Ablauf eines Abgleichs (syncOnce), höchstens SYNC_MAX_ROUNDS Runden:
+     1. abholen (pull; mit sinceRev, wenn der gemeinsame Stand bekannt ist: "unverändert" spart die Daten)
+     2. Daten des Servers prüfen (sanitizeSyncDoc); unbrauchbar oder aus einer neueren Version: abbrechen, nichts verändern
+     3. lokalen Stand lesen, zusammenführen (mergeDocs, Drei-Wege) und, wenn sich lokal etwas ändert, SOFORT übernehmen —
+        ohne dazwischen auf etwas zu warten (Eingaben während der Wartezeit auf das Netz sind so schon eingeflossen)
+     4. Zustand (rev/base = abgeholter Stand) speichern, DANN hochladen (push, baseRev = abgeholte rev)
+     5. war jemand schneller (409): zurück zu 1., mit dem gerade abgeholten Stand als Basis
+   Wechselt unterwegs die Person oder wird getrennt, bricht der Abgleich ab, bevor er etwas übernimmt oder speichert.
+   Ist die Versionsnummer des Servers KLEINER als die zuletzt bekannte (Wiederherstellung aus einer Sicherung), gilt der
+   gemeinsame Stand als unbekannt: es wird vereinigt statt gelöscht. ====================================================== */
+const SYNC_API = "/api/aikido_tracker/";
+const SYNC_KEY = "aikido-sync";
+const SYNC_STATE_VERSION = 1;
+const SYNC_MAX_ROUNDS = 5;
+const SYNC_NAME_MAX = 40;
+const SYNC_CODE_MIN = 6;
+const SYNC_CODE_MAX = 64;
+const SYNC_MAX_BYTES = 8 * 1024 * 1024; // so viel nimmt der Server höchstens an
+
+let syncTimeoutMs = 30000;
+let syncServer = { checked: false, available: false, registration: false, version: "", incompatible: false };
+let syncState = null;        // Verbindung der aktiven Person oder null
+let syncUnreadable = false;  // gespeicherte Verbindung war da, aber unlesbar
+let syncRunning = null;      // Promise des laufenden Abgleichs
+let syncAgain = false;       // während des Abgleichs kam eine neue Anforderung: danach noch einmal
+let syncConnecting = false;  // Anmelden/Neu anlegen läuft
+let syncBlockedUntil = 0;    // performance.now()-Zeitpunkt, bis zu dem der Server um Ruhe gebeten hat (429)
+let syncLastRunAt = 0;       // performance.now() des letzten Durchlaufs (siehe 6f: "frisch genug?")
+let syncStatus = { phase: "off", at: null, code: null, message: "", info: null }; // phase: off | idle | running | ok | error
+
+function syncKeyFor(id = activeProfileId) { return id === MAIN_PROFILE_ID ? SYNC_KEY : `${SYNC_KEY}@${id}`; }
+
+/* Geprüfter Zustand oder null (dann ist die Verbindung nicht zu retten). Beschädigter Fortschritt (rev/base) rettet die
+   Verbindung, setzt aber beides zurück. */
+function cleanSyncState(parsed) {
+  if (!isPlainObject(parsed) || parsed.v !== SYNC_STATE_VERSION) return null;
+  const { name, code } = parsed;
+  if (typeof name !== "string" || !name.trim() || [...name].length > SYNC_NAME_MAX) return null;
+  if (typeof code !== "string" || [...code].length < SYNC_CODE_MIN || [...code].length > SYNC_CODE_MAX) return null;
+  const progress = isDigest(parsed.base) && Number.isInteger(parsed.rev) && parsed.rev >= 0;
+  return {
+    v: SYNC_STATE_VERSION, name, code,
+    rev: progress ? parsed.rev : null,
+    base: progress ? deepCopy(parsed.base) : null,
+    at: typeof parsed.at === "string" && parsed.at.length <= 40 ? parsed.at : null,
+    rejected: parsed.rejected === true,
+  };
+}
+
+/* Liest die Verbindung einer Person. Bewusst ohne Rettungskopie (loadChecked): der Zugangscode gehört in keine Rettungsdatei. */
+async function readSyncState(id = activeProfileId) {
+  const raw = await storageGet(syncKeyFor(id));
+  if (raw == null || raw === "") return { state: null, unreadable: false };
+  let state = null;
+  try { state = cleanSyncState(JSON.parse(raw)); } catch (e) { state = null; }
+  return { state, unreadable: !state };
+}
+
+async function saveSyncState(id, state) { return persist(syncKeyFor(id), JSON.stringify(state)); }
+
+function setSyncStatus(patch) {
+  syncStatus = Object.assign({}, syncStatus, patch);
+  syncStatusChanged();
+}
+
+function syncStatusChanged() { renderSyncCard(); }
+
+/* ----- Meldungen (deutsch) ---------------------------------------------------------------------------------------------- */
+function syncErrorText(code, extra) {
+  const wait = extra && Number.isFinite(extra.retryAfter) && extra.retryAfter > 0 ? Math.ceil(extra.retryAfter / 60) : 0;
+  switch (code) {
+    case "offline": return "Keine Verbindung zum Server. Die Daten bleiben auf diesem Gerät und werden später abgeglichen.";
+    case "timeout": return "Der Server antwortet nicht (Zeitüberschreitung). Die Daten bleiben auf diesem Gerät.";
+    case "bad_credentials": return "Name oder Zugangscode wurden vom Server abgelehnt.";
+    case "rejected": return "Name oder Zugangscode wurden vom Server abgelehnt. Bitte neu anmelden.";
+    case "rate_limited": return wait ? `Zu viele Versuche. Bitte in etwa ${wait} ${wait === 1 ? "Minute" : "Minuten"} erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.";
+    case "registration_disabled": return "Auf diesem Server können keine neuen Personen angelegt werden (kein Einladungscode eingerichtet).";
+    case "bad_invite": return "Der Einladungscode stimmt nicht.";
+    case "invalid_invite": return "Bitte den Einladungscode eingeben.";
+    case "name_taken": return "Dieser Name ist auf dem Server schon vergeben.";
+    case "full": return "Der Server hat keinen Platz für weitere Personen.";
+    case "invalid_name": return `Der Name ist nicht zulässig (1 bis ${SYNC_NAME_MAX} Zeichen: Buchstaben, Ziffern, Leerzeichen, _ . ' -).`;
+    case "invalid_code": return `Der Zugangscode muss ${SYNC_CODE_MIN} bis ${SYNC_CODE_MAX} Zeichen lang sein.`;
+    case "too_large": return "Der Datenstand ist zu groß für den Server (mehr als 8 MB). Es wurde nichts hochgeladen.";
+    case "invalid_data": return "Der Server hat den Datenstand abgelehnt.";
+    case "storage_error": return "Der Server kann gerade nicht speichern. Bitte später erneut versuchen.";
+    case "server_error": return "Der Server meldet einen Fehler. Bitte später erneut versuchen.";
+    case "bad_response": return "Die Antwort des Servers ist unverständlich. Läuft hier der Aikido-Tracker-Baustein?";
+    case "server_data_invalid": return "Der Datenstand auf dem Server ist unbrauchbar. Es wurde nichts verändert.";
+    case "newer_version": return "Der Datenstand auf dem Server stammt aus einer neueren Version der App. Bitte die App aktualisieren — bis dahin bleibt alles unverändert.";
+    case "conflict_loop": return "Der Abgleich wurde mehrmals von anderen Geräten überholt. Bitte gleich noch einmal versuchen.";
+    case "local_storage": return "Die abgeholten Daten ließen sich auf diesem Gerät nicht speichern. Es wurde nichts hochgeladen.";
+    case "person_changed": return "Die Person wurde gewechselt. Der Abgleich gilt für die vorherige Person und wurde abgebrochen.";
+    case "not_connected": return "Diese Person ist nicht mit einem Server verbunden.";
+    case "already_connected": return "Diese Person ist schon verbunden. Bitte zuerst trennen.";
+    case "already_used": return `Diese Server-Person ist schon mit „${extra && extra.person ? extra.person : "einer anderen Person"}“ verbunden.`;
+    case "busy": return "Gerade läuft ein anderer Vorgang. Bitte kurz warten.";
+    default: return extra && typeof extra.serverMessage === "string" && extra.serverMessage ? extra.serverMessage.slice(0, 200) : "Unbekannter Fehler.";
+  }
+}
+
+function syncFail(code, extra) {
+  const result = { ok: false, code, message: syncErrorText(code, extra) };
+  if (extra && Number.isFinite(extra.retryAfter) && extra.retryAfter > 0) result.retryAfter = Math.ceil(extra.retryAfter);
+  return result;
+}
+
+/* ----- Netz --------------------------------------------------------------------------------------------------------------- */
+/* Ein Aufruf. Ergebnis { ok: true, status, data } oder { ok: false, code, status?, retryAfter?, serverMessage? }; wirft nie. */
+async function syncRequest(endpoint, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), syncTimeoutMs);
+  try {
+    let response;
+    try {
+      response = await fetch(SYNC_API + endpoint, body === undefined
+        ? { method: "GET", cache: "no-store", signal: controller.signal }
+        : { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
+    } catch (e) {
+      return { ok: false, code: controller.signal.aborted ? "timeout" : "offline" };
+    }
+    let data = null;
+    try { data = await response.json(); } catch (e) {
+      if (controller.signal.aborted) return { ok: false, code: "timeout" };
+      data = null;
+    }
+    if (response.ok && isPlainObject(data) && data.ok === true) return { ok: true, status: response.status, data };
+    const known = isPlainObject(data) && typeof data.code === "string" && /^[a-z_]{1,40}$/.test(data.code);
+    let retryAfter = isPlainObject(data) ? Number(data.retryAfter) : NaN;
+    if (!(retryAfter > 0)) retryAfter = Number(response.headers.get("Retry-After"));
+    return {
+      ok: false, status: response.status,
+      code: known ? data.code : response.status >= 500 ? "server_error" : "bad_response",
+      retryAfter: retryAfter > 0 && retryAfter < 86400 ? retryAfter : undefined,
+      serverMessage: isPlainObject(data) && typeof data.error === "string" ? data.error : "",
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Gibt es einen (passenden) Server unter dieser Adresse? Das Ergebnis steht in syncServer. */
+async function syncPing() {
+  if (!/^https?:$/.test(window.location.protocol)) {
+    syncServer = { checked: true, available: false, registration: false, version: "", incompatible: false };
+    syncStatusChanged();
+    return false;
+  }
+  const r = await syncRequest("ping");
+  const data = r.ok ? r.data : null;
+  const isServer = isPlainObject(data) && data.app === "aikido-tracker-server";
+  const compatible = isServer && data.api === 1;
+  syncServer = {
+    checked: true, available: compatible, registration: compatible && data.registration === true,
+    version: isServer && typeof data.version === "string" ? data.version.slice(0, 40) : "", incompatible: isServer && !compatible,
+  };
+  syncStatusChanged();
+  return compatible;
+}
+
+/* ----- Verbinden und trennen -------------------------------------------------------------------------------------------- */
+const syncNameKey = (name) => String(name).normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+
+/* Ist diese Server-Person schon mit einer ANDEREN Person der App verbunden? Gibt deren Namen zurück. */
+async function syncUsedBy(serverName, exceptId) {
+  for (const person of profiles) {
+    if (person.id === exceptId) continue;
+    const { state } = await readSyncState(person.id);
+    if (state && syncNameKey(state.name) === syncNameKey(serverName)) return person.name;
+  }
+  return null;
+}
+
+/* Anmelden (create: false) oder neu anlegen (create: true, mit Einladungscode). Die Verbindung gilt für die aktive Person.
+   Danach ist noch nichts abgeglichen (beim ersten Abgleich wird vereinigt); frisch angelegt ist der Server leer (rev 0). */
+async function syncConnect(input) {
+  if (profileBusy || syncConnecting) return syncFail("busy");
+  if (syncState) return syncFail("already_connected");
+  const { code, invite, create } = input || {};
+  const name = input && typeof input.name === "string" ? input.name.normalize("NFC").replace(/\s+/g, " ").trim() : "";
+  if (!name || [...name].length > SYNC_NAME_MAX) return syncFail("invalid_name");
+  if (typeof code !== "string" || [...code].length < SYNC_CODE_MIN || [...code].length > SYNC_CODE_MAX) return syncFail("invalid_code");
+  if (create && (typeof invite !== "string" || !invite.trim())) return syncFail("invalid_invite");
+  syncConnecting = true;
+  const pid = activeProfileId;
+  try {
+    const usedBefore = await syncUsedBy(name, pid);
+    if (usedBefore) return syncFail("already_used", { person: usedBefore });
+    const r = create ? await syncRequest("register", { name, code, invite: invite.trim() }) : await syncRequest("login", { name, code });
+    if (!r.ok) return syncFail(r.code, r);
+    if (activeProfileId !== pid || profileBusy) return syncFail("person_changed");
+    const serverName = isPlainObject(r.data.person) && typeof r.data.person.name === "string" && r.data.person.name ? r.data.person.name : name;
+    const usedAfter = serverName === name ? null : await syncUsedBy(serverName, pid); // der Server kennt den Namen eventuell in anderer Schreibweise
+    if (usedAfter) return syncFail("already_used", { person: usedAfter });
+    const fresh = create === true; // frisch angelegt: der Server-Stand ist leer, rev 0
+    const state = { v: SYNC_STATE_VERSION, name: serverName, code, rev: fresh ? 0 : null, base: fresh ? digestDoc(null) : null, at: null, rejected: false };
+    if (!(await saveSyncState(pid, state))) return syncFail("local_storage");
+    if (activeProfileId === pid && !profileBusy) {
+      syncState = state;
+      syncFailures = 0;
+      setSyncStatus({ phase: "idle", code: null, message: "", at: null });
+      scheduleAutoSync("verbunden", 400);
+    }
+    return { ok: true, created: fresh };
+  } finally {
+    syncConnecting = false;
+  }
+}
+
+/* Neu anmelden mit einem neuen Zugangscode (nach "abgelehnt"): Name und Fortschritt bleiben. */
+async function syncReconnect(input) {
+  if (!syncState) return syncFail("not_connected");
+  if (profileBusy || syncConnecting) return syncFail("busy");
+  const code = input && input.code;
+  if (typeof code !== "string" || [...code].length < SYNC_CODE_MIN || [...code].length > SYNC_CODE_MAX) return syncFail("invalid_code");
+  const pid = activeProfileId, state = syncState;
+  syncConnecting = true;
+  try {
+    const r = await syncRequest("login", { name: state.name, code });
+    if (!r.ok) return syncFail(r.code, r);
+    if (activeProfileId !== pid || syncState !== state || profileBusy) return syncFail("person_changed");
+    const next = Object.assign({}, state, { code, rejected: false });
+    if (!(await saveSyncState(pid, next))) return syncFail("local_storage");
+    if (activeProfileId === pid && syncState === state) {
+      syncState = next;
+      syncFailures = 0;
+      setSyncStatus({ phase: "idle", code: null, message: "" });
+      scheduleAutoSync("neu angemeldet", 200);
+    }
+    return { ok: true };
+  } finally {
+    syncConnecting = false;
+  }
+}
+
+/* Trennen: die Verbindung (mit Zugangscode) wird gelöscht; die Daten der Person bleiben unberührt. */
+async function syncDisconnect() {
+  if (!syncState) return false;
+  const pid = activeProfileId;
+  syncState = null;
+  cancelAutoSync();
+  setSyncStatus({ phase: "off", code: null, message: "", at: null, info: null });
+  const removed = await storageRemove(syncKeyFor(pid));
+  saveFailures.delete(syncKeyFor(pid));
+  return removed;
+}
+
+/* ----- Der Abgleich ------------------------------------------------------------------------------------------------------ */
+const syncNowIso = () => new Date().toISOString();
+
+/* Was hat sich beim Zusammenführen für diesen Stand geändert? { added, changed, removed, other } (other: Links, Ziele, Prüfungsziel) */
+function syncChangeStats(before, after) {
+  const mapOf = (doc) => new Map(doc.log.map((e) => [e.id, e]));
+  const was = mapOf(before), is = mapOf(after);
+  const stats = { added: 0, changed: 0, removed: 0, other: 0 };
+  is.forEach((entry, id) => { if (!was.has(id)) stats.added++; else if (!docsEqual(was.get(id), entry)) stats.changed++; });
+  was.forEach((entry, id) => { if (!is.has(id)) stats.removed++; });
+  ["techLinks", "techThresholds"].forEach((name) => {
+    new Set([...Object.keys(before[name]), ...Object.keys(after[name])]).forEach((key) => {
+      const x = hasOwn(before[name], key) ? before[name][key] : null, y = hasOwn(after[name], key) ? after[name][key] : null;
+      if (!docsEqual(x, y)) stats.other++;
+    });
+  });
+  EXAM_TARGET_FIELDS.forEach((field) => { if (before.examTarget[field] !== after.examTarget[field]) stats.other++; });
+  return stats;
+}
+
+/* Gleicht jetzt ab. Mehrere gleichzeitige Aufrufe teilen sich einen Durchlauf; kam während eines Durchlaufs ein weiterer
+   Aufruf, folgt danach genau ein weiterer Durchlauf (Änderungen von unterwegs gehen so nicht unter). */
+function syncNow(reason) {
+  if (!syncState) return Promise.resolve(syncFail("not_connected"));
+  if (syncState.rejected) return Promise.resolve(syncFail("rejected"));
+  const waitMs = syncBlockedUntil - performance.now();
+  if (waitMs > 0) return Promise.resolve(syncFail("rate_limited", { retryAfter: Math.ceil(waitMs / 1000) }));
+  if (syncRunning) { syncAgain = true; return syncRunning; }
+  syncRunning = syncLoop(reason).finally(() => { syncRunning = null; syncLastRunAt = performance.now(); });
+  return syncRunning;
+}
+
+async function syncLoop(reason) {
+  let result;
+  do {
+    syncAgain = false;
+    result = await syncOnce(reason);
+  } while (syncAgain && syncState && !syncState.rejected && (result.ok || result.code === "person_changed"));
+  return result;
+}
+
+async function syncOnce() {
+  const pid = activeProfileId;
+  const state = syncState;
+  const mine = () => activeProfileId === pid && !profileBusy && syncState === state; // noch dieselbe Person und Verbindung?
+  const lost = () => (activeProfileId === pid && syncState !== state ? syncFail("not_connected") : syncFail("person_changed"));
+  const fail = async (code, extra) => {
+    const result = syncFail(code, extra);
+    if (code === "bad_credentials") { state.rejected = true; await saveSyncState(pid, state); }
+    if (code === "rate_limited") syncBlockedUntil = performance.now() + (result.retryAfter || 60) * 1000;
+    if (mine()) setSyncStatus({ phase: "error", code, message: result.message });
+    return result;
+  };
+  setSyncStatus({ phase: "running", code: null, message: "" });
+  const stats = { added: 0, changed: 0, removed: 0, other: 0 };
+  let conflicts = 0, dropped = 0, pushed = false, restored = false, applied = false, rounds = 0;
+  const done = () => {
+    const result = { ok: true, upToDate: !applied && !pushed, pushed, pulled: stats, conflicts, dropped, rounds, rev: state.rev, serverRestored: restored };
+    if (mine()) setSyncStatus({ phase: "ok", at: syncNowIso(), code: null, message: "", info: { pulled: stats, pushed, conflicts, dropped, restored } });
+    return result;
+  };
+
+  for (let round = 1; round <= SYNC_MAX_ROUNDS; round++) {
+    rounds = round;
+    /* 1. abholen */
+    const known = state.base !== null && Number.isInteger(state.rev);
+    const pull = await syncRequest("pull", known ? { name: state.name, code: state.code, sinceRev: state.rev } : { name: state.name, code: state.code });
+    if (!mine()) return lost();
+    if (!pull.ok) return fail(pull.code, pull);
+    const remoteRev = pull.data.rev;
+    const unchanged = pull.data.unchanged === true;
+    if (!Number.isInteger(remoteRev) || remoteRev < 0 || (unchanged && !(known && remoteRev === state.rev))) return fail("bad_response");
+
+    /* 2. Daten des Servers prüfen */
+    let remoteDoc = null; // null: der Server hat noch den Stand, den wir als gemeinsamen Stand kennen
+    if (!unchanged) {
+      const checked = sanitizeSyncDoc(pull.data.data);
+      if (!checked) return fail("server_data_invalid");
+      if (checked.unsupported) return fail("newer_version");
+      remoteDoc = checked.doc;
+      dropped = checked.dropped;
+    }
+
+    /* 3. ab hier bis zum Übernehmen kein await: lokalen Stand lesen, zusammenführen, übernehmen */
+    const local = currentLocalDoc();
+    let merged = local.doc;
+    let pushBase = state.rev;
+    if (remoteDoc === null) {
+      if (docsEqual(digestDoc(local.doc), state.base)) return done(); // beide Seiten unverändert
+    } else {
+      const older = known && remoteRev < state.rev; // der Server ist "zurückgegangen" (z. B. aus einer Sicherung)
+      restored = restored || older;
+      const result = mergeDocs(older ? null : state.base, local.doc, remoteDoc);
+      conflicts += result.conflicts;
+      merged = result.doc;
+      if (!docsEqual(merged, local.doc)) {
+        const delta = syncChangeStats(local.doc, merged);
+        const saved = await applyMergedDoc(merged, local.localOnly);
+        if (!saved) return fail("local_storage");
+        stats.added += delta.added; stats.changed += delta.changed; stats.removed += delta.removed; stats.other += delta.other;
+        applied = true;
+        if (!mine()) return lost();
+      }
+      /* 4. Zustand speichern (abgeholter Stand), dann hochladen */
+      state.rev = remoteRev;
+      state.base = digestDoc(remoteDoc);
+      pushBase = remoteRev;
+      const serverHasAll = docsEqual(merged, remoteDoc);
+      if (applied && serverHasAll) state.at = syncNowIso();
+      await saveSyncState(pid, state);
+      if (!mine()) return lost();
+      if (serverHasAll) return done();
+    }
+    if (new TextEncoder().encode(JSON.stringify(merged)).length > SYNC_MAX_BYTES) return fail("too_large");
+    const push = await syncRequest("push", { name: state.name, code: state.code, baseRev: pushBase, data: merged });
+    if (!mine()) return lost();
+    if (push.ok) {
+      const newRev = push.data.rev;
+      if (!Number.isInteger(newRev) || newRev < 0) return fail("bad_response");
+      state.rev = newRev;
+      state.base = digestDoc(merged);
+      state.at = syncNowIso();
+      await saveSyncState(pid, state);
+      pushed = true;
+      return done();
+    }
+    if (push.code === "conflict") continue; // 5. jemand war schneller: neu abholen und zusammenführen
+    return fail(push.code, push);
+  }
+  return fail("conflict_loop");
+}
+
+/* ======================================================================
+   6f. AUTOMATISCHER ABGLEICH (wann von allein abgeglichen wird)
+   ----------------------------------------------------------------------
+   Ausgelöst wird: beim Start, kurz nach Eingaben (gebündelt, syncAutoDebounceMs), beim Zurückkehren zur App (nur wenn
+   der letzte Abgleich älter als syncFreshMs ist), wenn das Netz wiederkommt, nach einem Personenwechsel und regelmäßig
+   (syncPeriodMs), solange die Seite sichtbar ist. Nach Fehlern wird mit wachsenden Pausen erneut versucht
+   (syncRetrySteps); nach einer Ablehnung gar nicht mehr (sonst sperrt der Server), und während einer vom Server
+   erbetenen Ruhezeit erst danach.
+   Nicht gestört wird: solange ein Fenster offen ist oder in ein Feld getippt wird — dann wird kurz später noch einmal
+   nachgesehen. Was gerade vom Server ÜBERNOMMEN wird (syncApplying), zählt nicht als eigene Änderung: sonst würde
+   jeder Abgleich den nächsten auslösen.
+   Mit "?abgleich=manuell" in der Adresse bleibt alles von Hand (für Fehlersuche und für die Prüfungen). ========== */
+let syncAutoEnabled = !/(^|[?&])abgleich=manuell(&|$)/.test(window.location.search);
+let syncApplying = false;      // gerade werden abgeholte Daten übernommen
+let syncAutoTimer = null;      // Kennung des geplanten Abgleichs
+let syncAutoAt = 0;            // wann er geplant ist (performance.now()), damit ein früherer Termin gewinnt
+let syncFailures = 0;          // wie oft hintereinander es schiefging (für die Pausen)
+let syncPeriodTimer = null;
+let syncAutoDebounceMs = 2500;
+let syncPeriodMs = 5 * 60 * 1000;
+let syncFreshMs = 30 * 1000;
+let syncRetrySteps = [30000, 60000, 120000, 300000, 600000];
+
+function syncCanAuto() {
+  return syncAutoEnabled && syncServer.available && !!syncState && !syncState.rejected;
+}
+
+/* Gerade ungünstig: ein Fenster ist offen oder jemand tippt in ein Feld. Dann wird nichts übernommen — es würde
+   unter den Händen wegspringen. */
+function syncWouldDisturb() {
+  if (profileBusy || syncConnecting) return true;
+  const offen = ["session-modal-overlay", "terms-modal-overlay", "profile-modal-overlay", "sync-modal-overlay"]
+    .some((id) => { const el = document.getElementById(id); return el && !el.hidden; });
+  if (offen) return true;
+  const active = document.activeElement;
+  return !!active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName);
+}
+
+/* Plant den nächsten Abgleich. Ein schon geplanter früherer Termin bleibt bestehen. */
+function scheduleAutoSync(reason, delay) {
+  if (!syncCanAuto()) return;
+  const ms = Math.max(0, Number(delay) || 0);
+  const when = performance.now() + ms;
+  if (syncAutoTimer !== null) {
+    if (syncAutoAt <= when) return;
+    clearTimeout(syncAutoTimer);
+  }
+  syncAutoAt = when;
+  syncAutoTimer = setTimeout(() => runAutoSync(reason), ms);
+}
+
+function cancelAutoSync() {
+  if (syncAutoTimer !== null) clearTimeout(syncAutoTimer);
+  syncAutoTimer = null;
+}
+
+async function runAutoSync(reason) {
+  syncAutoTimer = null;
+  if (!syncCanAuto()) return;
+  if (syncWouldDisturb()) { scheduleAutoSync(reason, 1500); return; }
+  const ruhe = syncBlockedUntil - performance.now();
+  if (ruhe > 0) { scheduleAutoSync(reason, ruhe + 500); return; }
+  const result = await syncNow(reason);
+  if (result.ok) { syncFailures = 0; return; }
+  if (["rejected", "person_changed", "not_connected", "newer_version", "too_large"].includes(result.code)) return; // erneutes Versuchen hilft hier nicht
+  const step = syncRetrySteps[Math.min(syncFailures, syncRetrySteps.length - 1)];
+  syncFailures++;
+  scheduleAutoSync("Wiederholung", Number.isFinite(result.retryAfter) ? result.retryAfter * 1000 + 500 : step);
+}
+
+/* Der regelmäßige Blick: nur solange die Seite sichtbar ist (im Hintergrund drosseln die Browser ohnehin). */
+function startSyncPeriod() {
+  if (syncPeriodTimer !== null) clearInterval(syncPeriodTimer);
+  syncPeriodTimer = setInterval(() => {
+    if (document.visibilityState === "visible") scheduleAutoSync("regelmäßig", 0);
+  }, Math.max(1000, syncPeriodMs));
+}
+
+/* Nach einer eigenen Änderung (persist) — aber nicht, während abgeholte Daten übernommen werden. */
+function noteLocalChange(key) {
+  if (syncApplying || !PERSON_KEYS.includes(baseKey(key))) return;
+  scheduleAutoSync("Änderung", syncAutoDebounceMs);
+}
+
+function syncOnReturn() {
+  if (document.visibilityState !== "visible" || !syncCanAuto()) return;
+  if (!syncLastRunAt || performance.now() - syncLastRunAt >= syncFreshMs) scheduleAutoSync("Rückkehr", 100);
+}
+
+/* ======================================================================
    7. UI-RÜCKMELDUNG (Fehler, Toasts)
    ====================================================================== */
 /* opts.exportable: zeigt im Banner zusätzlich "Backup speichern" (Rettung, wenn der Speicher streikt).
@@ -2208,6 +3611,232 @@ function showToast(msg, ms = 3200) {
   toast.classList.add("visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("visible"), ms);
+}
+
+/* ======================================================================
+   7b. OBERFLÄCHE DES ABGLEICHS (Karte in der Übersicht + Fenster zum Verbinden)
+   ----------------------------------------------------------------------
+   Die Karte erscheint NUR, wenn die Seite von einem passenden Server geladen wurde (syncServer.available, siehe
+   syncPing): als Datei oder von einem fremden Server bleibt die App genau wie bisher. Die Karte wird bei jeder
+   Statusänderung neu aufgebaut (syncStatusChanged -> renderSyncCard); der Fokus auf einem Knopf bleibt dabei erhalten.
+   Das Fenster hat drei Fassungen (syncDialogMode): anmelden (login), neu anlegen (create, mit Einladungscode) und
+   neu anmelden (reconnect, nur Zugangscode — nachdem der Server Name/Code abgelehnt hat). ==================== */
+let syncDialogMode = "login";
+let syncDialogBusy = false;
+
+/* "31.10.2026, 06:45" — für die Zeile "Zuletzt abgeglichen" */
+function formatTimestamp(iso) {
+  const d = typeof iso === "string" ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return "unbekannt";
+  return `${formatDate(dateToIso(d))}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/* Kurze Zusammenfassung des letzten Abgleichs (" · 3 übernommen, hochgeladen") */
+function syncSummaryText(info) {
+  if (!info) return "";
+  const p = info.pulled || {};
+  const uebernommen = (p.added || 0) + (p.changed || 0) + (p.removed || 0) + (p.other || 0);
+  const parts = [];
+  if (uebernommen) parts.push(`${uebernommen} übernommen`);
+  if (info.pushed) parts.push("hochgeladen");
+  if (info.conflicts) parts.push(`${plural(info.conflicts, "Konflikt", "Konflikte")} zusammengeführt`);
+  if (info.dropped) parts.push(`${plural(info.dropped, "unbrauchbaren Teil", "unbrauchbare Teile")} übersprungen`);
+  if (info.restored) parts.push("Server war zurückgesetzt, es wurde nichts gelöscht");
+  return parts.length ? ` · ${parts.join(", ")}` : " · es gab nichts zu tun";
+}
+
+function syncStatusText() {
+  if (!syncState) {
+    return syncUnreadable
+      ? "Eine gespeicherte Verbindung war nicht mehr lesbar. Die Daten bleiben auf diesem Gerät — bitte neu verbinden."
+      : "Diese Person ist mit keinem Server verbunden. Die Daten bleiben auf diesem Gerät.";
+  }
+  if (syncState.rejected) return syncErrorText("rejected");
+  switch (syncStatus.phase) {
+    case "running": return "Abgleich läuft…";
+    case "error": return syncStatus.message || syncErrorText("");
+    case "ok": return `Zuletzt abgeglichen: ${formatTimestamp(syncStatus.at)}${syncSummaryText(syncStatus.info)}`;
+    default: return syncState.at ? `Zuletzt abgeglichen: ${formatTimestamp(syncState.at)}` : "Noch nicht abgeglichen.";
+  }
+}
+
+function syncCardHTML() {
+  if (!syncServer.available) return "";
+  const connected = !!syncState;
+  const rejected = connected && syncState.rejected === true;
+  const running = syncStatus.phase === "running";
+  const problem = rejected || syncStatus.phase === "error";
+  const buttons = connected
+    ? `<button type="button" class="sync-btn primary" data-action="sync-now"${running || rejected ? " disabled" : ""}>Jetzt abgleichen</button>
+        ${rejected ? '<button type="button" class="sync-btn" data-action="sync-reconnect">Neu anmelden</button>' : ""}
+        <button type="button" class="sync-btn" data-action="sync-disconnect">Trennen</button>`
+    : '<button type="button" class="sync-btn primary" data-action="sync-open">Verbinden</button>';
+  return `
+      <div class="dash-card dash-sync-card" id="sync-card">
+        <h3 class="dash-card-title">Abgleich <span class="dash-card-sub">${connected ? esc(syncState.name) : "nicht verbunden"}</span></h3>
+        <p class="sync-status${problem ? " error" : ""}" id="sync-status-text">${esc(syncStatusText())}</p>
+        ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
+        <div class="sync-actions">${buttons}</div>
+      </div>`;
+}
+
+/* Nur die Karte neu aufbauen (nicht die ganze Übersicht): der Fokus auf einem Knopf wandert mit. Während eines
+   Abgleichs ist "Jetzt abgleichen" kurz gesperrt — dann wird der Fokus gemerkt und zurückgegeben, sobald es wieder
+   geht (sonst landet man mit der Tastatur am Seitenanfang). */
+let syncCardFocusAction = null;
+
+function renderSyncCard() {
+  const slot = document.getElementById("sync-card-slot");
+  if (!slot) return;
+  const active = document.activeElement;
+  if (active && active.dataset && active.dataset.action && slot.contains(active)) syncCardFocusAction = active.dataset.action;
+  const waiting = !!syncCardFocusAction && (!active || active === document.body || slot.contains(active));
+  slot.innerHTML = syncCardHTML();
+  if (!waiting) { syncCardFocusAction = null; return; }
+  const again = slot.querySelector(`[data-action="${syncCardFocusAction}"]`);
+  if (!again) { syncCardFocusAction = null; return; }
+  if (!again.disabled) { again.focus(); syncCardFocusAction = null; } // sonst: merken und beim nächsten Mal zurückgeben
+}
+
+/* ----- Fenster ----------------------------------------------------------------------------------------------------- */
+function syncModalHTML() {
+  const create = syncDialogMode === "create";
+  const reconnect = syncDialogMode === "reconnect";
+  const hint = reconnect
+    ? `Der Server hat Name oder Zugangscode abgelehnt. Bitte den Zugangscode für „${esc(syncState ? syncState.name : "")}“ neu eingeben.`
+    : create
+      ? "Legt eine neue Person auf dem Server an. Den Einladungscode legt der Server fest (Einstellungen des Aikido-Tracker-Bausteins)."
+      : "Melde dich mit dem Namen und dem Zugangscode an, die auf dem Server für dich eingerichtet sind.";
+  const modes = reconnect || !syncServer.registration ? "" : `
+          <div class="sync-mode-row" role="group" aria-label="Anmelden oder neu anlegen">
+            <button type="button" class="sync-mode-btn" data-action="sync-mode" data-mode="login" aria-pressed="${!create}">Anmelden</button>
+            <button type="button" class="sync-mode-btn" data-action="sync-mode" data-mode="create" aria-pressed="${create}">Neu anlegen</button>
+          </div>`;
+  const keineNeuen = reconnect || syncServer.registration ? "" :
+    '<p class="sync-field-note">Auf diesem Server können keine neuen Personen angelegt werden — dafür müsste im Baustein ein Einladungscode eingerichtet sein.</p>';
+  const nameField = reconnect ? "" : `
+          <label class="sync-field">Name auf dem Server
+            <input type="text" id="sync-name" autocomplete="username" autocapitalize="words" spellcheck="false" enterkeyhint="next"
+              maxlength="${SYNC_NAME_MAX}" aria-describedby="sync-error" />
+          </label>`;
+  const inviteField = create ? `
+          <label class="sync-field">Einladungscode
+            <input type="text" id="sync-invite" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="sync-error" />
+          </label>` : "";
+  return `
+    <div class="modal-panel sync-panel" role="dialog" aria-modal="true" aria-labelledby="sync-title">
+      <div class="modal-header">
+        <h2 id="sync-title" tabindex="-1">${reconnect ? "Neu anmelden" : "Mit dem Server verbinden"}</h2>
+        <button type="button" class="modal-close" data-action="sync-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="sync-dialog-hint">${hint}</p>${modes}${nameField}
+        <label class="sync-field">Zugangscode
+          <input type="password" id="sync-code" autocomplete="current-password" spellcheck="false" enterkeyhint="done"
+            maxlength="${SYNC_CODE_MAX}" aria-describedby="sync-error" />
+          <span class="sync-field-note">${SYNC_CODE_MIN} bis ${SYNC_CODE_MAX} Zeichen. Der Code wird nur auf diesem Gerät gespeichert und steht in keinem Backup.</span>
+        </label>${inviteField}
+        <p id="sync-error" class="sync-error" role="alert" hidden></p>${keineNeuen}
+        <div class="sync-submit-row">
+          <button type="button" class="sync-btn primary" data-action="sync-submit">${reconnect ? "Neu anmelden" : create ? "Neu anlegen" : "Anmelden"}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function isSyncModalOpen() {
+  const overlay = document.getElementById("sync-modal-overlay");
+  return !!overlay && !overlay.hidden;
+}
+
+function openSyncModal(mode) {
+  if (!syncServer.available) return;
+  if (mode === "reconnect" && !syncState) return;
+  if (mode !== "reconnect" && syncState) return;
+  syncDialogMode = mode === "reconnect" ? "reconnect" : "login";
+  const overlay = document.getElementById("sync-modal-overlay");
+  overlay.innerHTML = syncModalHTML();
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  const first = document.getElementById(syncDialogMode === "reconnect" ? "sync-code" : "sync-name");
+  if (first) first.focus();
+}
+
+function closeSyncModal() {
+  const overlay = document.getElementById("sync-modal-overlay");
+  if (!overlay || overlay.hidden) return;
+  overlay.hidden = true;
+  overlay.innerHTML = "";
+  syncDialogBusy = false;
+  document.body.style.overflow = "";
+  const back = document.querySelector('#sync-card [data-action]');
+  if (back) back.focus();
+}
+
+/* Baut das Fenster neu (Umschalten anmelden/anlegen) und behält die Eingaben */
+function switchSyncMode(mode) {
+  if (syncDialogMode === "reconnect" || syncDialogBusy) return;
+  const name = (document.getElementById("sync-name") || {}).value || "";
+  const code = (document.getElementById("sync-code") || {}).value || "";
+  syncDialogMode = mode === "create" ? "create" : "login";
+  const overlay = document.getElementById("sync-modal-overlay");
+  overlay.innerHTML = syncModalHTML();
+  const nameEl = document.getElementById("sync-name"), codeEl = document.getElementById("sync-code");
+  if (nameEl) nameEl.value = name;
+  if (codeEl) codeEl.value = code;
+  const focus = document.getElementById(syncDialogMode === "create" ? "sync-invite" : "sync-name");
+  if (focus) focus.focus();
+}
+
+function setSyncDialogError(message) {
+  const el = document.getElementById("sync-error");
+  if (!el) return;
+  el.textContent = message || "";
+  el.hidden = !message;
+}
+
+async function submitSyncDialog() {
+  if (syncDialogBusy || !isSyncModalOpen()) return;
+  const value = (id) => (document.getElementById(id) || {}).value || "";
+  const button = document.querySelector('#sync-modal-overlay [data-action="sync-submit"]');
+  syncDialogBusy = true;
+  setSyncDialogError("");
+  if (button) button.disabled = true;
+  let result;
+  try {
+    result = syncDialogMode === "reconnect"
+      ? await syncReconnect({ code: value("sync-code") })
+      : await syncConnect({ name: value("sync-name"), code: value("sync-code"), invite: value("sync-invite"), create: syncDialogMode === "create" });
+  } finally {
+    syncDialogBusy = false;
+    const again = document.querySelector('#sync-modal-overlay [data-action="sync-submit"]');
+    if (again) again.disabled = false;
+  }
+  if (!result.ok) { setSyncDialogError(result.message); return; }
+  closeSyncModal();
+  showToast(result.created ? "Auf dem Server angelegt und verbunden." : "Verbunden.");
+  renderSyncCard();
+  await syncNow("verbunden");
+}
+
+async function disconnectFromServer() {
+  if (!syncState) return;
+  if (!confirm(`Verbindung zu „${syncState.name}“ trennen?\n\nDie Daten dieser Person bleiben vollständig auf diesem Gerät. Der Stand auf dem Server bleibt auch unverändert — nur abgeglichen wird nicht mehr.`)) return;
+  const ok = await syncDisconnect();
+  renderSyncCard();
+  showToast(ok ? "Verbindung getrennt." : "Verbindung getrennt (im Speicher blieb ein Rest zurück).");
+}
+
+/* Tab bleibt im Fenster (Fokus-Falle) */
+function trapSyncTab(e) {
+  const panel = document.querySelector("#sync-modal-overlay .sync-panel");
+  if (!panel) return;
+  const items = [...panel.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length > 0);
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1], a = document.activeElement;
+  if (e.shiftKey && (a === first || !panel.contains(a) || a === document.getElementById("sync-title"))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (a === last || !panel.contains(a))) { e.preventDefault(); first.focus(); }
 }
 
 /* ======================================================================
@@ -2590,6 +4219,7 @@ function renderUebersicht() {
         <button type="button" class="terms-btn" data-action="open-terms" data-view="glossar">Glossar</button>
       </div>
     </div>
+    <div id="sync-card-slot">${syncCardHTML()}</div>
     <div class="dash-card dash-backup-card">
       <h3 class="dash-card-title">Daten-Sicherung</h3>
       <p class="backup-hint">Alle Daten liegen nur in diesem Browser bzw. dieser Datei — regelmäßiges Backup empfohlen.</p>
@@ -2604,10 +4234,18 @@ function renderUebersicht() {
     <p class="app-version">Version ${esc(APP_VERSION)} · Stand ${formatDate(APP_VERSION_DATE)}</p>`;
 }
 
+/* Bereichsname einer Rettungskopie; bei Daten einer Person steht ihr Name dabei ("Trainingsverlauf (Lena)") */
+function rescueLabel(key) {
+  const label = STORAGE_LABELS[baseKey(key)] || "Daten";
+  const at = String(key).indexOf("@");
+  const person = at < 0 ? null : profiles.find((p) => p.id === String(key).slice(at + 1));
+  return person ? `${label} (${person.name})` : label;
+}
+
 /* Karte "Gesicherte Originaldaten": nur sichtbar, wenn es Kopien gibt */
 function rescueBoxHTML() {
   if (!rescueRecords.length) return "";
-  const items = rescueRecords.map((r) => `${esc(STORAGE_LABELS[r.key] || "Daten")} ${esc(backupDateText(r.savedAt))}`).join(", ");
+  const items = rescueRecords.map((r) => `${esc(rescueLabel(r.key))} ${esc(backupDateText(r.savedAt))}`).join(", ");
   return `
       <div class="rescue-box">
         <h4 class="rescue-title">Gesicherte Originaldaten</h4>
@@ -3726,6 +5364,10 @@ document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 document.getElementById("error-banner-close").addEventListener("click", () => { rescueNotice = null; hideError(); });
 
 document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-action="sync-open"]')) openSyncModal("login");
+  if (e.target.closest('[data-action="sync-reconnect"]')) openSyncModal("reconnect");
+  if (e.target.closest('[data-action="sync-now"]')) syncNow("Knopf");
+  if (e.target.closest('[data-action="sync-disconnect"]')) disconnectFromServer();
   if (e.target.closest('[data-action="open-session-modal"]')) openSessionModal();
   if (e.target.closest('[data-action="export-data"]')) exportData();
   if (e.target.closest('[data-action="download-rescue"]')) downloadRescue();
@@ -3837,15 +5479,92 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !termsOverlay.hidden) closeTerms();
 });
 
+/* ----- Personen: Ereignisse (Öffnen über den Knopf in der Kopfzeile, alles Weitere im Fenster) ----- */
+const profileOverlay = document.getElementById("profile-modal-overlay");
+
+document.getElementById("profile-chip").addEventListener("click", openProfileModal);
+
+profileOverlay.addEventListener("click", (e) => {
+  if (e.target === profileOverlay) { closeProfileModal(); return; }
+  const select = e.target.closest(".profile-select");
+  if (select) { switchProfile(select.closest(".profile-row").dataset.id); return; }
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const row = el.closest(".profile-row");
+  const id = row ? row.dataset.id : null;
+  switch (el.dataset.action) {
+    case "profile-close": closeProfileModal(); break;
+    case "profile-add": submitNewProfile(); break;
+    case "profile-rename": startProfileRename(id); break;
+    case "profile-rename-save": submitProfileRename(id); break;
+    case "profile-rename-cancel": cancelProfileRename(id); break;
+    case "profile-delete": deleteProfile(id); break;
+  }
+});
+
+profileOverlay.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { trapProfileTab(e); return; }
+  if (e.key !== "Enter" || e.isComposing) return; // Enter während einer Eingabemethode (z.B. Japanisch) bestätigt nur die Umwandlung
+  if (e.target.id === "profile-new-name") { e.preventDefault(); submitNewProfile(); }
+  else if (e.target.classList.contains("profile-rename-input")) { e.preventDefault(); submitProfileRename(e.target.closest(".profile-row").dataset.id); }
+});
+
+profileOverlay.addEventListener("input", clearProfileError); // wer weitertippt, will die Meldung nicht mehr sehen
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !isProfileModalOpen()) return;
+  if (profileRenameId) cancelProfileRename(profileRenameId); // Esc bricht zuerst nur das Umbenennen ab
+  else closeProfileModal();
+});
+
+/* ----- Abgleich: Ereignisse im Fenster ----- */
+const syncOverlay = document.getElementById("sync-modal-overlay");
+
+syncOverlay.addEventListener("click", (e) => {
+  if (e.target === syncOverlay) { closeSyncModal(); return; }
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  switch (el.dataset.action) {
+    case "sync-close": closeSyncModal(); break;
+    case "sync-mode": switchSyncMode(el.dataset.mode); break;
+    case "sync-submit": submitSyncDialog(); break;
+  }
+});
+
+syncOverlay.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { trapSyncTab(e); return; }
+  if (e.key !== "Enter" || e.isComposing) return;
+  if (/^(INPUT)$/.test(e.target.tagName)) { e.preventDefault(); submitSyncDialog(); }
+});
+
+syncOverlay.addEventListener("input", () => setSyncDialogError("")); // wer weitertippt, will die Meldung nicht mehr sehen
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && isSyncModalOpen()) closeSyncModal();
+});
+
+/* ----- Abgleich: wann von allein (siehe 6f) ----- */
+document.addEventListener("visibilitychange", syncOnReturn);
+window.addEventListener("focus", syncOnReturn);
+window.addEventListener("online", () => scheduleAutoSync("Netz wieder da", 200));
+
 /* ======================================================================
    20. INITIALISIERUNG
    ====================================================================== */
 async function init() {
-  await Promise.all([loadLog(), loadTheme(), loadExamTarget(), loadTechLinks(), loadTechThresholds(), loadRescues()]);
+  await loadProfiles(); // zuerst: sie bestimmt, welche Schlüssel gelesen werden
+  const [data] = await Promise.all([readPersonData(activeProfileId), loadTheme(), loadRescues()]);
+  applyPersonData(activeProfileId, data);
   announceUnreadable(await secureOriginals()); // Kopien ablegen, BEVOR irgendetwas gespeichert (= überschrieben) werden kann
   applyTheme();
   watchTabbarHeight();
+  renderProfileChip();
   renderAll();
+  await syncPing(); // erst jetzt: ohne Server bleibt die App genau wie bisher (die Karte "Abgleich" erscheint dann nicht)
+  if (syncServer.available) {
+    startSyncPeriod();
+    scheduleAutoSync("Start", 300);
+  }
 }
 init();
 </script>

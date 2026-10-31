@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.2.0] – 2026-10-31
+
+Abgleich mehrerer Geräte aus der App heraus (App v2.3).
+
+### Neu
+- Die mitgelieferte App kann sich jetzt selbst mit diesem Baustein abgleichen: Anmelden oder Anlegen je Person (Karte „Abgleich“ in der Übersicht), Zusammenführen statt Überschreiben, Konflikte ohne Datenverlust, Arbeiten ohne Netz und automatischer Abgleich im Hintergrund.
+- Die Schnittstelle des Bausteins ist dafür unverändert geblieben (`docs/SCHNITTSTELLE.md`, `api: 1`): ältere App-Fassungen laufen weiter.
+
+### Geändert
+- Mitgelieferte App von v2.1 auf v2.3 (Version 2.2 brachte mehrere Personen auf einem Gerät, 2.3 den Abgleich).
+
 ## [1.1.0] – 2026-10-27
 
 Installation und Aktualisierung über HACS; die App wird im Baustein mitgeliefert (App v2.1).
