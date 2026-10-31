@@ -1,6 +1,6 @@
 # Aikido Tracker – Server-Baustein für Home Assistant: Schnittstelle (API 1)
 
-Stand: 31.10.2026 · Baustein: Custom Integration `aikido_tracker` · Version 1.2.0
+Stand: 31.10.2026 · Baustein: Custom Integration `aikido_tracker` · Version 1.3.0
 
 ## Zweck
 
@@ -50,7 +50,7 @@ Er liefert außerdem die App selbst aus (`/aikido-tracker`, siehe unten); die Ap
 ## Aufrufe
 
 ### `GET /api/aikido_tracker/ping`
-Ohne Anmeldung, ohne Zähler. Antwort: `{"ok": true, "app": "aikido-tracker-server", "api": 1, "version": "1.2.0", "registration": true|false}`.
+Ohne Anmeldung, ohne Zähler. Antwort: `{"ok": true, "app": "aikido-tracker-server", "api": 1, "version": "1.3.0", "registration": true|false}`.
 `registration` = ob ein Einladungscode eingerichtet ist (Anlegen möglich).
 
 ### `POST /api/aikido_tracker/register` – Person anlegen

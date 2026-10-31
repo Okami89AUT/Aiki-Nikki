@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.3)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.4)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -202,6 +202,19 @@
      Einträge (die Duplikat-Erkennung greift nur auf dem Gerät selbst). Kommt einmal ein neuer Datenbereich dazu, muss SCHEMA_VERSION
      hochgezählt werden. Auf dem iPhone hilft der Abgleich zusätzlich gegen das Aufräumen des Browser-Speichers.
      Hier nicht prüfbar: Safari/iPhone (nur Chromium) und das Zusammenspiel mit dem echten Baustein (folgt mit Release 1.2.0).
+  ✅ Version 2.4 — Der Server-Zugang bestimmt den Namen (31.10.2026): Im Betrieb gefunden (Daniel, erstes Gerätepaar): Handy und
+     Laptop hingen am selben Server-Zugang, zeigten oben aber verschiedene Namen — der Anzeigename lag bisher nur auf dem Gerät.
+     Erwartung ist aber: ein Zugang = ein Benutzer, überall gleich. Jetzt gilt: Beim Anmelden (und bei jedem gelungenen Abgleich)
+     heißt die Person in der App so wie auf dem Server; solange sie verbunden ist, lässt sie sich hier nicht umbenennen
+     (Knopf gesperrt, Hinweis "Der Name kommt vom Server-Zugang — zum Umbenennen zuerst trennen"). Nach dem Trennen ist der Name
+     wieder frei. Ist der Server-Name hier schon an eine ANDERE Person vergeben, bleibt der bisherige Name stehen und die Karte
+     "Abgleich" sagt warum — erzwungen wird nichts. Das Datenformat des Abgleichs bleibt unverändert (SCHEMA_VERSION 2): der Name
+     kommt aus der Verbindung, nicht aus den abgeglichenen Daten.
+     Test: 13 neue Prüfungen (s4-ui, Gruppe D9) — Name nach dem Anmelden, zweites Gerät mit eigener Benennung, Nachziehen beim
+     Abgleich, gesperrtes Umbenennen (aktiv und in der Liste), Freigabe nach dem Trennen, Namenskollision, Personenwechsel mitten
+     im Abgleich, keine unnötigen Schreibvorgänge. Gegenprobe: 8 eingebaute Fehler, alle erkannt (einer begründet stehen gelassen).
+     Gesamte Regression: 23 Läufe grün; zwei Prüfungen in s3 mussten nachgezogen werden, weil die Meldung "schon mit … verbunden"
+     jetzt den Server-Namen nennt.
   ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.2.0 mit dieser App (Update über GitHub/HACS; je Release prüfen, ob die neue
      Version auf dem Home Assistant ankommt, ggf. über den Konnektor "Home Ass") -> Prüfungs-Chronik -> Trainingseinheit mit Dauer + Stunden seit
      letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
@@ -1719,7 +1732,7 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 const APP_VERSION_DATE = "2026-10-31";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
@@ -2227,6 +2240,7 @@ function applyPersonData(id, data) {
   syncState = data.sync.state;
   syncUnreadable = data.sync.unreadable;
   syncFailures = 0;
+  syncNameBlocked = false;
   cancelAutoSync(); // ein geplanter Abgleich gehörte zur vorherigen Person
   setSyncStatus({ phase: syncState ? "idle" : "off", at: null, code: null, message: "", info: null });
   if (syncState) scheduleAutoSync("Personenwechsel", 400);
@@ -2549,6 +2563,39 @@ function checkProfileName(input, exceptId) {
   return { name };
 }
 
+/* ----- Ein Zugang = ein Benutzer: der Server bestimmt den Namen ---------------------------------------------------------
+   Ist eine Person mit dem Server verbunden, heißt sie in der App genauso wie dort - auf jedem Gerät gleich. Sie lässt
+   sich dann hier nicht umbenennen (erst trennen). Gelingt die Übernahme nicht, weil der Name hier schon an eine andere
+   Person vergeben ist, bleibt der bisherige Name stehen und die Karte "Abgleich" erklärt warum. */
+let profileSyncNames = {};   // Kennung -> Server-Name der NICHT aktiven Personen (beim Öffnen des Fensters gelesen)
+let syncNameBlocked = false; // der Server-Name ließ sich nicht übernehmen (hier schon vergeben)
+
+function profileSyncName(id) {
+  if (id === activeProfileId) return syncState ? syncState.name : null;
+  return hasOwn(profileSyncNames, id) ? profileSyncNames[id] : null;
+}
+
+async function adoptServerName(pid, serverName) {
+  const person = profiles.find((p) => p.id === pid);
+  const name = cleanProfileName(typeof serverName === "string" ? serverName : "");
+  if (!person || !name || profileNameLength(name) > MAX_PROFILE_NAME) return false;
+  if (profileNameKey(name) === profileNameKey(person.name)) { syncNameBlocked = false; return true; }
+  if (profiles.some((p) => p.id !== pid && profileNameKey(p.name) === profileNameKey(name))) {
+    syncNameBlocked = true;
+    syncStatusChanged();
+    return false;
+  }
+  const list = profiles.map((p) => (p.id === pid ? { id: p.id, name, createdAt: p.createdAt } : p));
+  if (!(await writeProfiles(list, activeProfileId))) return false;
+  profiles = list;
+  syncNameBlocked = false;
+  renderProfileChip();
+  renderProfileList();
+  renderSyncCard();
+  if (rescueRecords.length) renderUebersicht(); // die Karte "Gesicherte Originaldaten" nennt Personen beim Namen
+  return true;
+}
+
 /* Meldung im Fenster (rot, unter der Liste); ist das Fenster zu (Aufruf von außen), als Hinweis unten im Bild */
 function profileProblem(message) {
   const box = document.getElementById("profile-error");
@@ -2644,6 +2691,11 @@ async function renameProfile(id, input) {
   if (profileBusy) return false;
   const person = profiles.find((p) => p.id === id);
   if (!person) return false;
+  const vomServer = profileSyncName(id);
+  if (vomServer) { // der Name gehört zum Server-Zugang, sonst hieße dieselbe Person auf jedem Gerät anders
+    profileProblem(`Der Name kommt vom Server-Zugang „${vomServer}“. Zum Umbenennen zuerst trennen (Karte „Abgleich“).`);
+    return false;
+  }
   const checked = checkProfileName(input, id);
   if (checked.error) { profileProblem(checked.error); return false; }
   profileBusy = true;
@@ -2745,7 +2797,7 @@ function profileRowHTML(p) {
   return `
       <li class="profile-row${active ? " active" : ""}" data-id="${esc(p.id)}">
         <button type="button" class="profile-select"${active ? ' aria-current="true"' : ""}><span class="profile-select-name">${esc(p.name)}</span>${active ? '<span class="profile-check" aria-hidden="true">✓</span>' : ""}</button>
-        <button type="button" class="profile-icon-btn" data-action="profile-rename" aria-label="Umbenennen: ${esc(p.name)}">${PROFILE_ICON_EDIT}</button>
+        <button type="button" class="profile-icon-btn" data-action="profile-rename" aria-label="Umbenennen: ${esc(p.name)}"${profileSyncName(p.id) ? ' disabled title="Der Name kommt vom Server-Zugang — zum Umbenennen zuerst trennen."' : ""}>${PROFILE_ICON_EDIT}</button>
         <button type="button" class="profile-icon-btn danger" data-action="profile-delete" aria-label="Löschen: ${esc(p.name)}"${profiles.length <= 1 ? " disabled" : ""}>${PROFILE_ICON_DELETE}</button>
       </li>`;
 }
@@ -2784,8 +2836,14 @@ function renderProfileList(focusSelector) {
   if (target) target.focus();
 }
 
-function openProfileModal() {
+async function openProfileModal() {
   profileRenameId = null;
+  profileSyncNames = {};
+  for (const p of profiles) { // welche Personen hängen an einem Server-Zugang? (deren Namen kommen von dort)
+    if (p.id === activeProfileId) continue;
+    const { state } = await readSyncState(p.id);
+    if (state) profileSyncNames[p.id] = state.name;
+  }
   const overlay = document.getElementById("profile-modal-overlay");
   overlay.innerHTML = profileModalHTML();
   overlay.hidden = false;
@@ -3303,6 +3361,7 @@ async function syncConnect(input) {
       syncState = state;
       syncFailures = 0;
       setSyncStatus({ phase: "idle", code: null, message: "", at: null });
+      await adoptServerName(pid, serverName); // ein Zugang = ein Benutzer: der Name kommt ab jetzt vom Server
       scheduleAutoSync("verbunden", 400);
     }
     return { ok: true, created: fresh };
@@ -3342,6 +3401,7 @@ async function syncDisconnect() {
   if (!syncState) return false;
   const pid = activeProfileId;
   syncState = null;
+  syncNameBlocked = false;
   cancelAutoSync();
   setSyncStatus({ phase: "off", code: null, message: "", at: null, info: null });
   const removed = await storageRemove(syncKeyFor(pid));
@@ -3377,7 +3437,13 @@ function syncNow(reason) {
   const waitMs = syncBlockedUntil - performance.now();
   if (waitMs > 0) return Promise.resolve(syncFail("rate_limited", { retryAfter: Math.ceil(waitMs / 1000) }));
   if (syncRunning) { syncAgain = true; return syncRunning; }
-  syncRunning = syncLoop(reason).finally(() => { syncRunning = null; syncLastRunAt = performance.now(); });
+  const pid = activeProfileId, state = syncState;
+  syncRunning = syncLoop(reason)
+    .then(async (result) => {
+      if (result.ok && activeProfileId === pid && syncState === state) await adoptServerName(pid, state.name);
+      return result;
+    })
+    .finally(() => { syncRunning = null; syncLastRunAt = performance.now(); });
   return syncRunning;
 }
 
@@ -3675,6 +3741,7 @@ function syncCardHTML() {
       <div class="dash-card dash-sync-card" id="sync-card">
         <h3 class="dash-card-title">Abgleich <span class="dash-card-sub">${connected ? esc(syncState.name) : "nicht verbunden"}</span></h3>
         <p class="sync-status${problem ? " error" : ""}" id="sync-status-text">${esc(syncStatusText())}</p>
+        ${connected && syncNameBlocked ? `<p class="sync-status error">Der Name „${esc(syncState.name)}“ ist hier schon an eine andere Person vergeben — diese Person heißt deshalb weiterhin „${esc((profiles.find((p) => p.id === activeProfileId) || { name: "" }).name)}“. Bitte die andere Person umbenennen.</p>` : ""}
         ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
         <div class="sync-actions">${buttons}</div>
       </div>`;

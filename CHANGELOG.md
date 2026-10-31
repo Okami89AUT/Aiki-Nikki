@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.3.0] – 2026-10-31
+
+Der Server-Zugang bestimmt den Namen der Person (App v2.4).
+
+### Geändert
+- Mitgelieferte App von v2.3 auf v2.4: Ist eine Person in der App mit einem Server-Zugang verbunden, heißt sie genauso wie dort – auf jedem Gerät gleich. Solange sie verbunden ist, lässt sie sich in der App nicht umbenennen; nach dem Trennen wieder schon.
+- Am Baustein selbst ändert sich nichts (Schnittstelle unverändert, `api: 1`).
+
 ## [1.2.0] – 2026-10-31
 
 Abgleich mehrerer Geräte aus der App heraus (App v2.3).

@@ -2,6 +2,21 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.3.0 (31.10.2026)
+
+Mitgelieferte App auf v2.4; der Baustein selbst ist unverändert.
+
+### Entscheidungen
+
+* **Ein Zugang = ein Benutzer.** Im ersten Praxiseinsatz zeigten Handy und Laptop am selben Server-Zugang verschiedene Namen, weil der Anzeigename zum Gerät gehörte. Jetzt kommt er aus der Verbindung: Beim Anmelden und bei jedem gelungenen Abgleich übernimmt die App den Namen des Server-Zugangs, und solange sie verbunden ist, lässt sich die Person in der App nicht umbenennen.
+* **Ohne Änderung am Datenformat.** Der Name steckt in der Verbindung (Server-Name), nicht im abgeglichenen Datenstand – `SCHEMA_VERSION` bleibt 2, ältere und neuere App-Fassungen bleiben untereinander verträglich.
+* **Keine erzwungene Umbenennung.** Ist der Name hier schon an eine andere Person vergeben, bleibt alles, wie es ist, und die Karte „Abgleich“ erklärt den Grund.
+
+### Prüfungen
+
+Unverändert gegenüber 1.2.0 (Baustein, Repository, Gegenprobe, Lauf gegen ein echtes Home Assistant). In der App kamen 13
+Prüfungen und 8 Gegenproben für die Namensregel dazu.
+
 ## ✅ Version 1.2.0 (31.10.2026)
 
 Die mitgelieferte App gleicht sich jetzt selbst mit diesem Baustein ab (App v2.3).
