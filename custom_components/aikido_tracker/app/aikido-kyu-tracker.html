@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.5)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.6)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -266,14 +266,85 @@
      aktuellen Grad samt Datum.
      Test: 13 neue Prüfungen (own/c2-chronik-ui.js, Gruppe L5) — zuerst rot, dann grün; zwei davon mussten geschärft werden,
      weil Ziel-Grad und Chronik-Vorschlag im Beispiel zufällig gleich waren und ein Fehler so unsichtbar geblieben wäre.
-     Gegenprobe zum Release: s1 22, s2 59, s3 162, s4 73, s5 28, c1 28, c2 46 eingebaute Fehler — alle erkannt.
+     Gegenprobe zum Release: s1 22, s2 59, s4 73, s5 28, c1 28, c2 46 eingebaute Fehler — alle erkannt. s3 (162, Sync-Client)
+     NICHT erneut durchlaufen: dort sind Code und Prüfungen seit 2.4 unverändert, der Lauf wurde abgebrochen (Rechner neu
+     gestartet). Drei Fundstellen, die seit 2.4 ins Leere zeigten, wurden nachgezogen und einzeln geprüft.
      Gesamte Regression: 25 Läufe grün. (Ein Lauf war einmal rot und beim Wiederholen sauber — eine Zeitüberschreitung unter
      Last, kein Fehler in der App.)
      Bekannte Grenzen: Dan-Grade kennt das Programm nicht. Wird eine NIEDRIGERE Prüfung nachträglich mit späterem Datum
      eingetragen, bleibt "Aktuelles Kyu seit" beim höheren Grad — das ist so gewollt.
-  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.4.0 mit dieser App -> 2.6 Übersicht neu ordnen
-     (Trainings-Rhythmus kostet 237 von 2042 px und sagt wenig; "Braucht Aufmerksamkeit" kürzen; Abgleich/Backup/Version in einen
-     eigenen Bereich "Verwaltung") -> Trainingseinheit mit Dauer + Stunden seit letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
+  ✅ Version 2.6a — Übersicht, Teil 1: Trainings-Rhythmus kompakt (01.11.2026): Ausgemessen hatte die Übersicht auf dem Handy
+     2042 px (2,4 Bildschirme); davon gingen 237 px für die Heatmap drauf — 98 Kästchen, bei zwei, drei Einheiten pro Woche zu
+     rund 85 % leer, und die Frage "trainiere ich regelmäßig?" beantworteten die zwei Zahlen darunter schneller. Das Einzige,
+     was die Heatmap besser konnte, waren Lücken. Jetzt: acht Wochenbalken (Montag bis Sonntag, laufende Woche hervorgehoben),
+     darunter eine Zeile "Schnitt x,y Trainingstage pro Woche · längste Pause n Tage". 150 statt 237 px, und die Lücke steht
+     als Zahl da. Gezählt werden TRAININGSTAGE, nicht Einträge: drei Techniken an einem Abend sind ein Training (die Heatmap
+     hatte Einträge gezählt und damit einen vollen Abend wie mehrere Trainings aussehen lassen).
+     Test: 25 neue Prüfungen (own/c3-rhythmus.js, R1 Rechnen, R2 Karte samt 320/390/768 px hell und dunkel) — zuerst rot, dann
+     grün. Gegenprobe: 19 eingebaute Fehler, alle erkannt; zwei Prüfungen mussten dafür geschärft werden (leere Wochen müssen
+     deutlich flacher sein als Wochen mit Training; ein Training weit vor dem Fenster darf die Pause nicht verfälschen).
+     Nachgezogen: drei ältere Prüfungen, die am Heatmap-Raster hingen (a1-datum zweimal, Handy-Rundgang), prüfen jetzt das
+     Wochenraster — über alle Zeitzonen und Zeitumstellungen hinweg. Gesamte Regression: 26 Läufe grün.
+  ✅ Version 2.6b — Übersicht, Teil 2: kürzere Liste und Bereich "Verwaltung" (01.11.2026): "Braucht Aufmerksamkeit" zeigt jetzt
+     drei statt fünf Techniken, darunter "mehr anzeigen (n weitere)" für acht; aufgeklappt bleibt es, bis man wieder zuklappt.
+     Daten-Sicherung und der neue Block "Über diese App" stecken in einem eingeklappten Bereich "Verwaltung" am Ende der
+     Übersicht (44 px statt 145+). Er geht von selbst auf, sobald es gesicherte Originaldaten gibt — sonst läge der Hinweis
+     hinter einem zugeklappten Dreieck. Die Versionszeile bleibt darunter sichtbar: sie gehört zu jeder Fehlermeldung.
+     "Über diese App" sagt, was die App ist (privates Hilfsmittel), dass keine Gewähr übernommen wird, dass das
+     Prüfungsprogramm nicht amtlich ist und wo die Daten liegen (Gerät und, bei Abgleich, eigener Server).
+     Die Übersicht ist damit von 2092 auf 1790 px heruntergekommen; der Abgleich bleibt bewusst außerhalb der Verwaltung,
+     weil seine Statuszeile Probleme meldet.
+     Test: 25 neue Prüfungen (own/c4-verwaltung.js, V1 Liste, V2 Bereich, V3 Rettungskopien, V4 Über-Block) — zuerst rot, dann
+     grün. Gegenprobe: 16 eingebaute Fehler; zwei überlebten zuerst (ein Knopf, den es bei wenigen Techniken gar nicht geben
+     darf, und ein unsichtbar geschalteter Über-Block) — nach zwei schärferen Prüfungen alle erkannt.
+     Nachgezogen: die Versionszeilen-Prüfung (a8) misst jetzt gegen den Bereich "Verwaltung" statt gegen die Sicherungs-Karte.
+     Gesamte Regression: 27 Läufe grün.
+  ✅ Version 2.6c — Lizenz und Gewähr (01.11.2026): Daniels Vorgabe: keine Kosten, keine Haftung gegenüber Dritten, jede und
+     jeder darf die Software nutzen. Das ist die MIT-Lizenz — drei Absätze, freie Nutzung/Änderung/Weitergabe, und der
+     Gewährleistungs- und Haftungsausschluss steckt im Lizenztext selbst. Das Repository hatte bis jetzt KEINE Lizenzdatei:
+     damit galt "alle Rechte vorbehalten", niemand außer ihm hätte den Baustein offiziell einsetzen dürfen — ein Widerspruch
+     zur Weitergabe über HACS. Jetzt: LICENSE im Repository (Rechteinhaber ist der GitHub-Name Okami89AUT, nicht der
+     Klarname — leicht zu ändern, wenn gewünscht), Abschnitt "Lizenz und Gewähr" im README samt Hinweis, dass bei eigenen
+     Zugängen für andere der Betreiber verantwortlich ist, und in der App unter "Über diese App" eine Zeile mit Lizenz und
+     Quelltext-Link (neues Fenster, rel="noopener noreferrer"). Nebenbei berichtigt: das README behauptete noch, der Abgleich
+     käme erst.
+     Test: 2 neue Prüfungen in own/c4-verwaltung.js (Lizenzzeile, sicherer Link) und 4 im Repository (LICENSE ist MIT, nennt
+     Jahr und Rechteinhaber, enthält den Haftungsausschluss; README nennt beides). Gegenprobe: 2 + 4 eingebaute Fehler
+     (Lizenz gelöscht, Haftungsausschluss entfernt, fremder Rechteinhaber, README ohne Lizenz), alle erkannt.
+     Repository-Prüfung 89, Server 229, Gegenprobe im Repository 119 — alles grün. Gesamte Regression: 27 Läufe grün.
+     Keine AGB nötig, solange nur eine Datei bereitgestellt wird; sie werden erst zum Thema, wenn jemand auf Daniels Server
+     Zugänge für Dritte bekommt.
+  ✅ Version 2.6d — Übersicht, Teil 3: Bereitschaft und Prüfungsziel in einer Karte (01.11.2026): Die beiden Karten standen
+     auf dem Handy untereinander und brauchten 476 px. Jetzt eine Karte: links der Ring (112 px statt 148), rechts Ziel-Kyu,
+     Termin, Countdown und der Vorschlag für den nächsten Grad. Die Mindest-Trainingszeit ist standardmäßig eingeklappt —
+     ihre Zusammenfassung nennt den Stand aber im Klartext ("Mindest-Trainingszeit: frühestens ab 06.12.2026" bzw. "erfüllt
+     seit …"), man muss also nicht aufklappen, um nachzusehen; aufgeklappt bleibt sie, bis man sie wieder zuklappt.
+     Auf sehr schmalen Geräten (bis 360 px, iPhone SE) wird der Ring auf 84 px verkleinert und die Überschrift darf umbrechen,
+     damit Ring und Bedienung nebeneinander bleiben statt zu stapeln. Ergebnis: 198 px statt 476 (bei 320 px: 214).
+     Die Übersicht ist damit von 2042 px (vor 2.6) auf 1512 px gekommen — rund ein Bildschirm weniger Scrollen.
+     Test: 26 neue Prüfungen (own/c5-ziel.js, Z1 eine Karte, Z2 eingeklappte Mindest-Trainingszeit, Z3 320/390/768 px hell und
+     dunkel) — zuerst rot, dann grün. Gegenprobe: 11 eingebaute Fehler, alle erkannt (darunter vertauschte Fälle in der
+     Zusammenfassung und die weggelassene Anpassung für schmale Schirme). Nachgezogen: A2 misst jetzt am Bereich #goal-card.
+     Gesamte Regression: 28 Läufe grün.
+  ✅ Version 2.6 — Übersicht aufgeräumt, Teil 4: Kennzahlen (01.11.2026): Letzter Schliff am Umbau. Die zwei Kacheln zählten
+     EINTRÄGE ("Diese Woche 13"), der neue Rhythmus daneben Trainingstage ("2") — nebeneinander las sich das wie ein
+     Widerspruch. Jetzt zeigen die Kacheln oben Trainingstage und darunter klein, wie viele Techniken das waren
+     ("2 / Diese Woche / 13 Techniken"). Der Wert "Diese Woche" ist damit derselbe wie der letzte Balken im Rhythmus.
+     Test: 6 neue Prüfungen (own/c3-rhythmus.js, Gruppe R3, inklusive Einzahl "1 Technik" und leerem Fall) — zuerst rot, dann
+     grün; nachgezogen: a1-datum und der Handy-Rundgang prüfen jetzt Trainingstage oben und Techniken darunter.
+     Gegenprobe: 5 eingebaute Fehler in den Kacheln (wieder Einträge gezählt, Technikzeile weg, Zeitfenster vertauscht …),
+     alle erkannt. Gesamte Regression: 28 Läufe grün.
+
+     ===== Stand nach dem Umbau 2.6 (a bis e) =====
+     Übersicht auf dem Handy: 1512 px statt 2042 px. Bereitschaft+Ziel 198 statt 476, Rhythmus 150 statt 237,
+     "Braucht Aufmerksamkeit" 390 statt 564 (drei statt fünf Techniken, "mehr anzeigen"), Sicherung+Version 53 statt 161
+     (Bereich "Verwaltung", klappt bei Rettungskopien von selbst auf). Dazu: MIT-Lizenz und Gewährleistungsausschluss in
+     Repository, README und App; Prüfungs-Chronik (2.5) verknüpft mit dem Prüfungsziel.
+     Gegenprobe zum Stand 2.6: s1 22, s2 59, s4 73, s5 28, c1 28, c2 46, c3 24, c4 18, c5 11 eingebaute Fehler — alle erkannt.
+     s3 (162, Sync-Client) nicht erneut durchlaufen: Code und Prüfungen dort sind seit 2.4 unverändert.
+  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.4.0 mit App 2.6 (Daniel legt den Tag an, wenn genug
+     beisammen ist — er hält die Zahl der Tags bewusst klein) -> Trainingseinheit mit Dauer + Stunden seit letzter Prüfung
+     -> .ics-Erinnerungen -> Wochenziel.
      Später/optional: B Handy/Barrierefreiheit, C Bedienung, D Datenmodell, Web-App/Veröffentlichen (Schriften selbst einbetten,
      Impressum/Datenschutz), NAS. Offen aus dem Betrieb: schwacher Einladungscode am Home Assistant ersetzen; eigene
      Verwaltungs-Oberfläche im Baustein statt der Hilfs-Helfer im Dashboard.
@@ -727,18 +798,29 @@
   /* ------------------------------------------------------------------
      KOMPONENTE: Uebersicht/Dashboard
      ------------------------------------------------------------------ */
-  .dash-top-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  /* Bereitschaft + Prüfungsziel in einer Karte (2.6d): Ring links, Bedienung rechts */
+  .goal-head { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; }
+  .goal-head .dash-ring-card { flex: 0 0 auto; }
+  .goal-controls { flex: 1 1 170px; min-width: 0; }
+  .goal-head .readiness-ring { width: 112px; height: 112px; }
+  /* sehr schmale Geräte (iPhone SE & Co.): kleinerer Ring, damit Ring und Bedienung nebeneinander bleiben */
+  @media (max-width: 360px) {
+    .goal-head { gap: 10px 12px; }
+    .goal-head .readiness-ring { width: 84px; height: 84px; }
+    .goal-head .dash-ring-card { max-width: 96px; }   /* sonst spreizt die Überschrift die Spalte */
+    .goal-controls { flex: 1 1 120px; }
+  }
   .dash-card {
     background: var(--c-surface); border: 1px solid var(--c-border-soft); border-radius: 12px;
     padding: 14px 16px; box-shadow: var(--shadow-card); margin-bottom: 14px;
   }
-  .dash-top-row .dash-card { margin-bottom: 0; }
   .dash-card-title {
     font-family: 'Shippori Mincho', serif; font-size: 14px; margin: 0 0 10px; color: var(--c-ink-soft);
     display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
   }
   .dash-card-sub { font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 11px; font-weight: 400; color: var(--c-ink-faint); }
   .dash-ring-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .dash-goal-card { margin-bottom: 14px; }
   .readiness-ring { width: 148px; height: 148px; }
   .ring-track { fill: none; stroke: var(--c-border-dashed); stroke-width: 9; }
   .ring-fill { fill: none; stroke: var(--c-accent); stroke-width: 9; stroke-linecap: round; transition: stroke-dasharray .5s ease; }
@@ -765,16 +847,35 @@
   .eligibility-hint { font-size: 11px; color: var(--c-ink-faint); margin: 8px 0 0; line-height: 1.4; }
   .eligibility-status { margin-top: 8px; padding: 6px 9px; background: var(--c-surface-alt); border-radius: 6px; }
   .eligibility-status.eligible { color: var(--c-moss); }
-  .heatmap-svg { width: 100%; max-width: 420px; height: auto; display: block; margin: 4px auto; }
-  .heat-cell.heat-0 { fill: var(--c-border-dashed); }
-  .heat-cell.heat-1 { fill: var(--c-accent); fill-opacity: 0.32; }
-  .heat-cell.heat-2 { fill: var(--c-accent); fill-opacity: 0.62; }
-  .heat-cell.heat-3 { fill: var(--c-accent); fill-opacity: 1; }
-  .heat-cell.heat-future { fill: transparent; }
-  .heatmap-legend { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 10.5px; color: var(--c-ink-faint); margin-top: 6px; }
+  /* Trainings-Rhythmus: eine Spalte je Woche, Höhe = Trainingstage (2.6a) */
+  .rhythm-row { display: flex; align-items: flex-end; gap: 6px; height: 44px; margin: 2px 0 8px; }
+  .rhythm-bar { flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; }
+  .rhythm-bar-fill { width: 100%; border-radius: 4px 4px 2px 2px; background: var(--c-accent); opacity: 0.55; }
+  .rhythm-bar.current .rhythm-bar-fill { opacity: 1; }
+  .rhythm-bar[data-days="0"] .rhythm-bar-fill { background: var(--c-border-dashed); opacity: 1; }
+  .rhythm-summary { font-size: 12.5px; color: var(--c-ink-muted); margin: 0; line-height: 1.5; }
   .dash-quick-stats { display: flex; gap: 10px; margin-bottom: 20px; }
   .dash-quick-stats .stat-chip { flex: 1; }
-  .dash-backup-card { margin-bottom: 20px; }
+  .dash-quick-stats .stat-sub { display: block; font-size: 10.5px; color: var(--c-ink-faint); margin-top: 2px; }
+  .neglect-toggle {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px; margin-top: 8px; padding: 6px 14px;
+    background: none; border: 1px solid var(--c-border); border-radius: 999px; color: var(--c-ink-soft);
+    font-family: inherit; font-size: 13px; cursor: pointer;
+  }
+  .neglect-toggle:hover { border-color: var(--c-accent-soft); }
+  .dash-admin { margin-bottom: 20px; border-top: 1px dashed var(--c-border-dashed); padding-top: 8px; }
+  .dash-admin > summary {
+    cursor: pointer; list-style: none; min-height: 44px; display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 500; color: var(--c-ink-soft);
+  }
+  .dash-admin > summary::-webkit-details-marker { display: none; }
+  .dash-admin > summary::before { content: "▸"; font-size: 12px; color: var(--c-ink-faint); }
+  .dash-admin[open] > summary::before { content: "▾"; }
+  .dash-about-card { margin-bottom: 14px; }
+  .about-text { font-size: 12.5px; color: var(--c-ink-muted); margin: 0 0 8px; line-height: 1.55; }
+  .about-text:last-child { margin-bottom: 0; }
+  .about-text a { color: var(--c-accent); text-decoration: underline; text-underline-offset: 2px; }
+  .dash-backup-card { margin-bottom: 14px; }
   .backup-hint { font-size: 12px; color: var(--c-ink-faint); margin: 0 0 12px; line-height: 1.5; }
   .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .backup-btn {
@@ -1834,7 +1935,7 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.5";
+const APP_VERSION = "2.6";
 const APP_VERSION_DATE = "2026-11-01";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
@@ -1851,6 +1952,9 @@ let techLinks = {}; // techniqueId -> { url, updatedAt }
 let openLinkId = null; // welches Technik-Link-Panel ist aufgeklappt
 
 let activeKyu = 6;
+let neglectExpanded = false;   // "Braucht Aufmerksamkeit": drei Zeilen oder acht (2.6b)
+let adminSectionOpen = false;  // Bereich "Verwaltung" aufgeklappt (bleibt beim Neuzeichnen erhalten)
+let eligibilityOpen = false;   // Mindest-Trainingszeit aufgeklappt (dito)
 
 let currentTab = "uebersicht"; // sichtbarer Haupt-Tab (Start: Übersicht)
 
@@ -4435,6 +4539,14 @@ function daysUntilText(dateStr) {
 /* Optionale Mindest-Trainingszeit seit dem letzten Grad (viele Verbände verlangen z.B. 6-12 Monate).
    Gibt null zurück, solange nicht beide Werte (Datum + Monate) gesetzt sind -> Feature bleibt "ausgeschaltet".
    Lässt sich aus gültigen Angaben kein Datum berechnen (Jahr > 9999), kommt eine erklärende Meldung statt Zahlen. */
+/* Kurzfassung für die zugeklappte Zusammenfassung: "frühestens ab …" bzw. "erfüllt seit …" */
+function eligibilitySummary(eligibility) {
+  if (!eligibility) return "Mindest-Trainingszeit (optional)";
+  const m = /(\d{2}\.\d{2}\.\d{4})/.exec(eligibility.text);
+  if (!m) return "Mindest-Trainingszeit: Angaben prüfen";
+  return eligibility.eligible ? `Mindest-Trainingszeit: erfüllt seit ${m[1]}` : `Mindest-Trainingszeit: frühestens ab ${m[1]}`;
+}
+
 function eligibilityStatus(currentKyuSince, minMonths) {
   if (!currentKyuSince || !minMonths || !parseIso(currentKyuSince)) return null;
   const eligibleIso = addMonthsIso(currentKyuSince, Number(minMonths));
@@ -4469,37 +4581,85 @@ function readinessRingSVG(pct, trained, total) {
 }
 
 /* Baut ein Tages-Raster der letzten weeksCount Wochen (Mo-So), zu Anzeigezwecken für die Heatmap */
-function buildHeatmapWeeks(weeksCount) {
-  const todayIso = todayStr();
-  const todayDow = weekdayMoSo(todayIso); // 0=Mo .. 6=So
-  const gridEnd = addDaysIso(todayIso, 6 - todayDow); // Sonntag der laufenden Woche
-  const totalDays = weeksCount * 7;
-  const gridStart = addDaysIso(gridEnd, -(totalDays - 1));
-
-  const counts = {};
-  log.forEach((e) => { counts[e.date] = (counts[e.date] || 0) + 1; });
-
-  const days = [];
-  for (let i = 0; i < totalDays; i++) {
-    const iso = addDaysIso(gridStart, i);
-    days.push({ iso, count: counts[iso] || 0, future: iso > todayIso });
-  }
-  return days;
+/* ----- Trainings-Rhythmus (2.6a) ---------------------------------------------------------------------------------
+   Gezählt werden TRAININGSTAGE (verschiedene Daten), nicht Einträge: drei Techniken an einem Abend sind ein Training.
+   Wochen beginnen am Montag; die laufende Woche steht am Ende. */
+function trainingDaySet() {
+  const set = new Set();
+  log.forEach((e) => { if (typeof e.date === "string" && e.date) set.add(e.date); });
+  return set;
 }
 
-function heatmapSVG(weeksCount) {
-  const days = buildHeatmapWeeks(weeksCount);
-  const cell = 11, gap = 3;
-  const w = weeksCount * (cell + gap) - gap;
-  const h = 7 * (cell + gap) - gap;
-  const rects = days.map((d, i) => {
-    const col = Math.floor(i / 7), row = i % 7;
-    const x = col * (cell + gap), y = row * (cell + gap);
-    const tier = d.future ? "future" : d.count === 0 ? "0" : d.count === 1 ? "1" : d.count === 2 ? "2" : "3";
-    const titleText = d.future ? "" : `${formatDate(d.iso)}: ${d.count} Eintrag${d.count === 1 ? "" : "e"}`;
-    return `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" class="heat-cell heat-${tier}">${titleText ? `<title>${esc(titleText)}</title>` : ""}</rect>`;
+function weeklyTrainingDays(weeks) {
+  const todayIso = todayStr();
+  const thisMonday = addDaysIso(todayIso, -weekdayMoSo(todayIso));
+  const days = trainingDaySet();
+  const out = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const start = addDaysIso(thisMonday, -7 * i);
+    const end = addDaysIso(start, 6);
+    let count = 0;
+    days.forEach((iso) => { if (iso >= start && iso <= end) count++; });
+    out.push({ start, days: count, current: i === 0 });
+  }
+  return out;
+}
+
+/* Verschiedene Trainingstage in den letzten (daysAgo+1) Tagen inkl. heute */
+function trainingDaysSince(daysAgo) {
+  const from = addDaysIso(todayStr(), -daysAgo);
+  let count = 0;
+  trainingDaySet().forEach((iso) => { if (iso >= from && iso <= todayStr()) count++; });
+  return count;
+}
+
+/* Längste Pause in Tagen innerhalb des Fensters: Abstand zwischen aufeinanderfolgenden Trainingstagen,
+   und zuletzt der Abstand vom letzten Training bis heute. Ohne Training im Fenster: 0. */
+function longestBreakDays(weeks = 8) {
+  const todayIso = todayStr();
+  const from = addDaysIso(todayIso, -weekdayMoSo(todayIso) - 7 * (weeks - 1));
+  const tage = [...trainingDaySet()].filter((iso) => iso >= from && iso <= todayIso).sort();
+  if (!tage.length) return 0;
+  let max = 0;
+  for (let i = 1; i < tage.length; i++) max = Math.max(max, diffDaysIso(tage[i - 1], tage[i]));
+  return Math.max(max, diffDaysIso(tage[tage.length - 1], todayIso));
+}
+
+/* Kennzahl-Kachel: große Zahl = Trainingstage (wie im Rhythmus), darunter die Zahl der geübten Techniken.
+   Vorher stand oben die Zahl der EINTRÄGE — neben "2 Trainingstage" im Rhythmus las sich das wie ein Widerspruch. */
+function quickStatHTML(label, daysAgo) {
+  const tage = trainingDaysSince(daysAgo);
+  const techniken = countSince(daysAgo);
+  return `<div class="stat-chip">
+        <span class="stat-number">${tage}</span>
+        <span class="stat-label">${esc(label)}</span>
+        ${techniken ? `<span class="stat-sub">${techniken} Technik${techniken === 1 ? "" : "en"}</span>` : ""}
+      </div>`;
+}
+
+function rhythmCardHTML(weeks = 8) {
+  const wochen = weeklyTrainingDays(weeks);
+  const max = Math.max(1, ...wochen.map((w) => w.days));
+  const bars = wochen.map((w) => {
+    const anteil = w.days / max;
+    const hoehe = w.days === 0 ? 3 : Math.max(8, Math.round(anteil * 100)) ;
+    const label = `Woche ab ${formatDate(w.start)}: ${w.days} Trainingstag${w.days === 1 ? "" : "e"}`;
+    return `<div class="rhythm-bar${w.current ? " current" : ""}" data-week="${w.start}" data-days="${w.days}" role="img" aria-label="${esc(label)}" title="${esc(label)}">
+            <div class="rhythm-bar-fill" style="height: ${w.days === 0 ? "3px" : hoehe + "%"}"></div>
+          </div>`;
   }).join("");
-  return `<svg viewBox="0 0 ${w} ${h}" class="heatmap-svg" role="img" aria-label="Trainingsaktivität der letzten ${weeksCount} Wochen">${rects}</svg>`;
+  const gesamt = wochen.reduce((sum, w) => sum + w.days, 0);
+  const schnitt = (gesamt / weeks).toFixed(1).replace(".", ",");
+  const pause = longestBreakDays(weeks);
+  const zusammenfassung = gesamt === 0
+    ? `Noch kein Training in den letzten ${weeks} Wochen eingetragen.`
+    : `Schnitt ${schnitt} Trainingstage pro Woche · längste Pause ${pause} Tage`;
+  return `
+    <div class="dash-card" id="rhythm-card">
+      <h3 class="dash-card-title">Trainings-Rhythmus <span class="dash-card-sub">letzte ${weeks} Wochen</span></h3>
+      <div class="rhythm-row">${bars}</div>
+      <p class="rhythm-summary">${esc(zusammenfassung)}</p>
+    </div>`;
 }
 
 /* Kleines Häkchen-Abzeichen unten rechts an einem Solar-Knoten, wenn die Schwelle erreicht ist */
@@ -4661,7 +4821,8 @@ function renderUebersicht() {
   const nextGrade = nextExamGrade();
   const focusKyu = KYUS.includes(examTarget.kyu) ? examTarget.kyu : nextGrade !== null ? nextGrade : activeKyu;
   const r = readiness(focusKyu);
-  const neglect = neglectedList(focusKyu, 5);
+  const neglectAll = neglectedList(focusKyu, 8);
+  const neglect = neglectExpanded ? neglectAll : neglectAll.slice(0, 3);
   const countdown = examTarget.date ? daysUntilText(examTarget.date) : "Noch kein Termin gesetzt.";
   const neglectHeading = r.total > 0 && r.trained === r.total ? "Am längsten her" : "Braucht Aufmerksamkeit";
   const eligibility = eligibilityStatus(kyuSince, examTarget.minMonths);
@@ -4672,59 +4833,49 @@ function renderUebersicht() {
       <svg class="session-cta-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
       Trainingstag erfassen
     </button>
-    <div class="dash-top-row">
-      <div class="dash-card dash-ring-card">
-        <h3 class="dash-card-title">Bereitschaft <span class="dash-card-sub">${focusKyu}. Kyu</span></h3>
-        ${readinessRingSVG(r.pct, r.trained, r.total)}
-      </div>
-      <div class="dash-card dash-target-card">
-        <h3 class="dash-card-title">Prüfungsziel</h3>
-        <div class="target-controls">
-          <select id="target-kyu-select" aria-label="Ziel-Kyu">
-            <option value="">Kein Ziel</option>
-            ${KYUS.map((k) => `<option value="${k}" ${examTarget.kyu === k ? "selected" : ""}>${k}. Kyu</option>`).join("")}
-          </select>
-          <input type="date" id="target-date-input" aria-label="Prüfungstermin" value="${esc(examTarget.date)}" />
+    <div class="dash-card dash-goal-card" id="goal-card">
+      <div class="goal-head">
+        <div class="dash-ring-card">
+          <h3 class="dash-card-title">Bereitschaft <span class="dash-card-sub">${focusKyu}. Kyu</span></h3>
+          ${readinessRingSVG(r.pct, r.trained, r.total)}
         </div>
-        <p class="target-countdown">${countdown}</p>
-        ${nextGrade !== null && examTarget.kyu !== nextGrade ? `<p class="target-next-hint">Nächster Grad: ${nextGrade}. Kyu <button type="button" class="exam-btn small" data-action="target-next-kyu">Als Ziel übernehmen</button></p>` : ""}
-        <details class="target-eligibility-details" ${(eligibility || kyuSince || examTarget.minMonths) ? "open" : ""}>
-          <summary>Mindest-Trainingszeit (optional)</summary>
+        <div class="goal-controls">
+          <h3 class="dash-card-title">Prüfungsziel</h3>
           <div class="target-controls">
-            <label class="form-label eligibility-field">Aktuelles Kyu seit
-              <input type="date" id="current-kyu-since-input" value="${esc(kyuSince)}"${gradeExam ? " disabled" : ""} />
-            </label>
-            <label class="form-label eligibility-field">Mindestmonate
-              <input type="number" id="min-months-input" min="0" max="60" step="1" placeholder="z.B. 6" value="${esc(examTarget.minMonths)}" />
-            </label>
+            <select id="target-kyu-select" aria-label="Ziel-Kyu">
+              <option value="">Kein Ziel</option>
+              ${KYUS.map((k) => `<option value="${k}" ${examTarget.kyu === k ? "selected" : ""}>${k}. Kyu</option>`).join("")}
+            </select>
+            <input type="date" id="target-date-input" aria-label="Prüfungstermin" value="${esc(examTarget.date)}" />
           </div>
-          ${gradeExam ? `<p class="kyu-since-note">Kommt aus deiner letzten Prüfung (${gradeExam.kyu}. Kyu am ${formatDate(gradeExam.date)}) — zum Ändern die Prüfung in der Karte „Prüfungen“ bearbeiten.</p>` : ""}
-          ${eligibility ? `<p class="target-countdown eligibility-status ${eligibility.eligible ? "eligible" : ""}">${eligibility.text}</p>` : '<p class="eligibility-hint">Trag dein Datum + die von deinem Verband geforderten Mindestmonate ein, um zu sehen, ab wann du frühestens antreten darfst.</p>'}
-        </details>
+          <p class="target-countdown">${countdown}</p>
+          ${nextGrade !== null && examTarget.kyu !== nextGrade ? `<p class="target-next-hint">Nächster Grad: ${nextGrade}. Kyu <button type="button" class="exam-btn small" data-action="target-next-kyu">Als Ziel übernehmen</button></p>` : ""}
+        </div>
       </div>
+      <details class="target-eligibility-details" id="eligibility-details"${eligibilityOpen ? " open" : ""}>
+        <summary>${esc(eligibilitySummary(eligibility))}</summary>
+        <div class="target-controls">
+          <label class="form-label eligibility-field">Aktuelles Kyu seit
+            <input type="date" id="current-kyu-since-input" value="${esc(kyuSince)}"${gradeExam ? " disabled" : ""} />
+          </label>
+          <label class="form-label eligibility-field">Mindestmonate
+            <input type="number" id="min-months-input" min="0" max="60" step="1" placeholder="z.B. 6" value="${esc(examTarget.minMonths)}" />
+          </label>
+        </div>
+        ${gradeExam ? `<p class="kyu-since-note">Kommt aus deiner letzten Prüfung (${gradeExam.kyu}. Kyu am ${formatDate(gradeExam.date)}) — zum Ändern die Prüfung in der Karte „Prüfungen“ bearbeiten.</p>` : ""}
+        ${eligibility ? `<p class="target-countdown eligibility-status ${eligibility.eligible ? "eligible" : ""}">${eligibility.text}</p>` : '<p class="eligibility-hint">Trag dein Datum + die von deinem Verband geforderten Mindestmonate ein, um zu sehen, ab wann du frühestens antreten darfst.</p>'}
+      </details>
     </div>
     <div id="exams-card-slot">${examsCardHTML()}</div>
-    <div class="dash-card">
-      <h3 class="dash-card-title">Trainings-Rhythmus <span class="dash-card-sub">letzte 14 Wochen</span></h3>
-      ${heatmapSVG(14)}
-      <div class="heatmap-legend">
-        <span>weniger</span>
-        <svg width="60" height="12" class="legend-svg" aria-hidden="true">
-          <rect x="0" y="1" width="10" height="10" rx="2" class="heat-cell heat-0" />
-          <rect x="16" y="1" width="10" height="10" rx="2" class="heat-cell heat-1" />
-          <rect x="32" y="1" width="10" height="10" rx="2" class="heat-cell heat-2" />
-          <rect x="48" y="1" width="10" height="10" rx="2" class="heat-cell heat-3" />
-        </svg>
-        <span>mehr</span>
-      </div>
-    </div>
-    <div class="dash-card">
+    ${rhythmCardHTML(8)}
+    <div class="dash-card" id="neglect-card">
       <h3 class="dash-card-title">${neglectHeading} <span class="dash-card-sub">${focusKyu}. Kyu</span></h3>
       <div class="tech-list">${neglect.length ? neglect.map((t) => techniqueRowHTML(t)).join("") : '<p class="empty-state">Keine Techniken für dieses Kyu hinterlegt.</p>'}</div>
+      ${neglectAll.length > 3 ? `<button type="button" class="neglect-toggle" data-action="toggle-neglect">${neglectExpanded ? "weniger anzeigen" : `mehr anzeigen (${neglectAll.length - 3} weitere)`}</button>` : ""}
     </div>
     <div class="dash-quick-stats">
-      <div class="stat-chip"><span class="stat-number">${countSince(6)}</span><span class="stat-label">Diese Woche</span></div>
-      <div class="stat-chip"><span class="stat-number">${countSince(29)}</span><span class="stat-label">Diesen Monat</span></div>
+      ${quickStatHTML("Diese Woche", 6)}
+      ${quickStatHTML("Diesen Monat", 29)}
     </div>
     <div class="dash-card dash-terms-card">
       <h3 class="dash-card-title">Begriffe &amp; Quiz</h3>
@@ -4735,17 +4886,31 @@ function renderUebersicht() {
       </div>
     </div>
     <div id="sync-card-slot">${syncCardHTML()}</div>
-    <div class="dash-card dash-backup-card">
-      <h3 class="dash-card-title">Daten-Sicherung</h3>
-      <p class="backup-hint">Alle Daten liegen nur in diesem Browser bzw. dieser Datei — regelmäßiges Backup empfohlen.</p>
-      <div class="backup-actions">
-        <button type="button" class="backup-btn" data-action="export-data">Als Datei exportieren</button>
-        <label class="backup-btn backup-import-label">
-          Datei importieren
-          <input type="file" id="import-file-input" accept="application/json,.json" hidden />
-        </label>
-      </div>${rescueBoxHTML()}
-    </div>
+    <details class="dash-admin" id="admin-section"${adminSectionOpen || rescueRecords.length ? " open" : ""}>
+      <summary>Verwaltung</summary>
+      <div class="dash-card dash-backup-card">
+        <h3 class="dash-card-title">Daten-Sicherung</h3>
+        <p class="backup-hint">Alle Daten liegen nur in diesem Browser bzw. dieser Datei — regelmäßiges Backup empfohlen.</p>
+        <div class="backup-actions">
+          <button type="button" class="backup-btn" data-action="export-data">Als Datei exportieren</button>
+          <label class="backup-btn backup-import-label">
+            Datei importieren
+            <input type="file" id="import-file-input" accept="application/json,.json" hidden />
+          </label>
+        </div>${rescueBoxHTML()}
+      </div>
+      <div class="dash-card dash-about-card" id="about-box">
+        <h3 class="dash-card-title">Über diese App</h3>
+        <p class="about-text">Privates Hilfsmittel für das eigene Aikido-Training, ohne Gewähr: Für Richtigkeit, Vollständigkeit und
+        Verfügbarkeit wird keine Gewähr übernommen, die Nutzung erfolgt auf eigene Verantwortung.</p>
+        <p class="about-text">Das Prüfungsprogramm ist nach bestem Wissen erfasst, aber nicht amtlich — im Zweifel gilt, was dein
+        Trainer bzw. dein Verband sagt.</p>
+        <p class="about-text">Deine Daten bleiben auf deinem Gerät (im Browser) und, wenn du den Abgleich nutzt, auf deinem eigenen
+        Server. Es wird nichts an Dritte übertragen.</p>
+        <p class="about-text">Quelltext und Weitergabe unter der MIT-Lizenz: <a href="https://github.com/Okami89AUT/Aiki-Nikki"
+        target="_blank" rel="noopener noreferrer">github.com/Okami89AUT/Aiki-Nikki</a></p>
+      </div>
+    </details>
     <p class="app-version">Version ${esc(APP_VERSION)} · Stand ${formatDate(APP_VERSION_DATE)}</p>`;
 }
 
@@ -5876,6 +6041,12 @@ document.getElementById("solar-content").addEventListener("keydown", (e) => {
 
 document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 
+/* Bereich "Verwaltung": auf- und zugeklappt merken, damit er beim Neuzeichnen so bleibt */
+document.addEventListener("toggle", (e) => {
+  if (e.target && e.target.id === "admin-section") adminSectionOpen = e.target.open;
+  if (e.target && e.target.id === "eligibility-details") eligibilityOpen = e.target.open;
+}, true);
+
 document.getElementById("error-banner-close").addEventListener("click", () => { rescueNotice = null; hideError(); });
 
 document.addEventListener("click", (e) => {
@@ -5890,6 +6061,7 @@ document.addEventListener("click", (e) => {
     if (examRowBtn.dataset.action === "exam-edit") openExamModal(id);
     if (examRowBtn.dataset.action === "exam-delete") deleteExam(id);
   } else if (e.target.closest('[data-action="exam-add"]')) openExamModal(null);
+  if (e.target.closest('[data-action="toggle-neglect"]')) { neglectExpanded = !neglectExpanded; renderUebersicht(); }
   if (e.target.closest('[data-action="target-next-kyu"]')) adoptNextGradeAsTarget();
   if (e.target.closest('[data-action="export-data"]')) exportData();
   if (e.target.closest('[data-action="download-rescue"]')) downloadRescue();

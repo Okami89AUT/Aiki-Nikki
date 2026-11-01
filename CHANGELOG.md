@@ -5,10 +5,16 @@ Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung br
 
 ## [1.4.0] – 2026-11-01
 
-Prüfungs-Chronik in der App (App v2.5).
+Prüfungs-Chronik, aufgeräumte Übersicht und MIT-Lizenz (App v2.6).
+
+### Neu
+- **MIT-Lizenz** für das ganze Repository (vorher gab es keine Lizenzdatei, damit galt „alle Rechte vorbehalten“). Damit darf jede und jeder die Software nutzen, ändern und weitergeben; Gewährleistung und Haftung sind im Lizenztext ausgeschlossen.
 
 ### Geändert
-- Mitgelieferte App von v2.4 auf v2.5: Die App führt jetzt eine Chronik der abgelegten Prüfungen (Grad, Datum, Prüfer, Notiz). Sie wird mitabgeglichen, steht im Backup und füllt „Aktuelles Kyu seit“ im Prüfungsziel; der nächste Grad wird als neues Ziel vorgeschlagen.
+- Mitgelieferte App von v2.4 auf v2.6:
+  - **Prüfungs-Chronik** (v2.5): abgelegte Prüfungen mit Grad, Datum, Prüfer und Notiz — je Person gespeichert, im Backup, im Abgleich, und verknüpft mit dem Prüfungsziel („Aktuelles Kyu seit“ kommt aus der letzten Prüfung, der nächste Grad wird als Ziel vorgeschlagen).
+  - **Aufgeräumte Übersicht** (v2.6): Trainings-Rhythmus als acht Wochenbalken statt 98-Kästchen-Heatmap, Bereitschaft und Prüfungsziel in einer Karte, „Braucht Aufmerksamkeit“ auf drei Techniken mit „mehr anzeigen“, Daten-Sicherung und „Über diese App“ in einem eingeklappten Bereich „Verwaltung“. Die Übersicht ist dadurch auf dem Handy von 2042 auf 1512 px geschrumpft.
+  - Gezählt werden jetzt **Trainingstage** statt Einträge (drei Techniken an einem Abend sind ein Training); die Zahl der Techniken steht klein darunter.
 - Am Baustein selbst ändert sich nichts: Er speichert den Datenstand einer Person als Ganzes, ohne die Bereiche zu kennen – die Schnittstelle bleibt unverändert (`api: 1`).
 
 ### Hinweis

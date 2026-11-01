@@ -4,7 +4,7 @@ Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
 ## ✅ Version 1.4.0 (01.11.2026)
 
-Mitgelieferte App auf v2.5 (Prüfungs-Chronik); der Baustein selbst ist unverändert.
+Mitgelieferte App auf v2.6 (Prüfungs-Chronik, aufgeräumte Übersicht), dazu die MIT-Lizenz; der Baustein selbst ist unverändert.
 
 ### Entscheidungen
 
@@ -12,9 +12,11 @@ Mitgelieferte App auf v2.5 (Prüfungs-Chronik); der Baustein selbst ist unverän
 * **`schemaVersion` von 2 auf 3.** Ein neuer Bereich muss hochgezählt werden, sonst würde eine ältere App den Bereich beim Zurückschreiben verlieren. Ältere Geräte lehnen den neueren Stand deshalb bewusst ab und gleichen erst wieder ab, wenn auch sie auf v2.5 sind – lieber kein Abgleich als ein stiller Datenverlust.
 * **Kennungen werden beim Empfangen nie neu vergeben.** Eine Prüfung ohne brauchbare Kennung fällt weg, statt eine neue zu bekommen: sonst entstünde auf jedem Gerät eine andere Kennung und dieselbe Prüfung würde sich bei jedem Abgleich verdoppeln.
 
+* **Lizenz nachgeholt.** Ein öffentliches Repository ohne LICENSE heißt „alle Rechte vorbehalten“ — niemand außer dem Autor hätte den Baustein offiziell einsetzen dürfen, obwohl er über HACS zur Installation angeboten wird. Jetzt MIT: freie Nutzung und Weitergabe, Gewährleistung und Haftung im Lizenztext ausgeschlossen. Rechteinhaber ist der GitHub-Name, nicht der Klarname.
+
 ### Prüfungen
 
-* Paket- und Serverprüfungen unverändert grün; die Versions-Mutanten zeigen jetzt auf 1.4.0 bzw. App v2.5.
+* Paket- und Serverprüfungen grün (89 bzw. 229); vier neue Paketprüfungen zur Lizenz, die Versions-Mutanten zeigen jetzt auf 1.4.0 bzw. App v2.6.
 
 ## ✅ Version 1.3.0 (31.10.2026)
 
