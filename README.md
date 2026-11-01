@@ -11,7 +11,7 @@ Der **Aikido Kyu Tracker** (Prüfungsprogramm 6. bis 1. Kyu und Trainingstagebuc
 * **Server-Baustein** („Custom Integration“) für Home Assistant: eine Datei je Person, Anmeldung mit Name und Zugangscode, Anlegen neuer Personen nur mit Einladungscode, Konflikterkennung statt stilles Überschreiben, Tagessicherungen, Sperren gegen Raten von Zugangscodes. Er läuft innerhalb von Home Assistant: kein Add-on, kein zweiter Port, keine zusätzliche Freigabe am Router.
 * **Die App** (`aikido-kyu-tracker.html`) steckt im Baustein und wird unter `/aikido-tracker` ausgeliefert, mit Zwischenspeicher-Regeln, die neue Fassungen sofort sichtbar machen. HACS installiert und aktualisiert beides gemeinsam.
 
-**Stand:** Der Server-Baustein ist fertig und getestet. Die App speichert vorerst noch im Browser; Anmelden und Abgleich mit dem Server folgen im nächsten Schritt (siehe [Änderungsprotokoll](CHANGELOG.md)).
+**Stand:** Server-Baustein und App sind fertig und getestet, Abgleich mehrerer Geräte inklusive: Die App meldet sich selbst am Baustein an und gleicht Trainingsverlauf, Prüfungen, Links, Ziel-Wiederholungen und Prüfungsziel ab — zusammenführend, nicht überschreibend (siehe [Änderungsprotokoll](CHANGELOG.md)).
 
 ## Installation
 
@@ -65,6 +65,10 @@ python tests/test_package.py    # Repository: Aufbau für HACS, Manifest, Versio
 
 Getestet mit Home Assistant 2026.2.3.
 
-## Lizenz
+## Lizenz und Gewähr
 
-Noch nicht festgelegt.
+[MIT-Lizenz](LICENSE): Jede und jeder darf diese Software nutzen, verändern und weitergeben, kostenlos und ohne Rückfrage; der Lizenztext muss mitgehen.
+
+Die Software wird **ohne jede Gewähr** bereitgestellt: keine Zusicherung von Richtigkeit, Vollständigkeit oder Verfügbarkeit, keine Haftung für Schäden aus der Nutzung. Das Prüfungsprogramm ist nach bestem Wissen erfasst, aber nicht amtlich — im Zweifel gilt, was dein Trainer oder dein Verband sagt.
+
+Wer den Baustein auf seinem Home Assistant betreibt und anderen Personen Zugänge gibt, verarbeitet deren Daten selbst und ist dafür verantwortlich (siehe Abschnitt „Sicherheit“).

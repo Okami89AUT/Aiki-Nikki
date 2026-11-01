@@ -100,10 +100,18 @@ def gruppe_aufbau():
     check("K1 app/ enthält genau die App", clean_listing(PKG / "app"), ["aikido-kyu-tracker.html"])
     check("K1 brand/ enthält genau Symbol und Symbol in doppelter Größe", clean_listing(PKG / "brand"), ["icon.png", "icon@2x.png"])
     check("K1 Hauptordner des Repositories: genau die erwarteten Einträge", clean_listing(ROOT),
-          [".github", ".gitignore", "CHANGELOG.md", "README.md", "custom_components", "docs", "hacs.json", "tests", "tools"])
+          [".github", ".gitignore", "CHANGELOG.md", "LICENSE", "README.md", "custom_components", "docs", "hacs.json", "tests", "tools"])
     check("K1 Workflows vorhanden", clean_listing(ROOT / ".github" / "workflows"), ["release.yml", "validate.yml"])
     check("K1 docs/: erwartete Dokumente", clean_listing(ROOT / "docs"), ["BAULOG.md", "INSTALLATION.md", "SCHNITTSTELLE.md", "VEROEFFENTLICHEN.md"])
     check("K1 tools/: Bauwerkzeug", clean_listing(ROOT / "tools"), ["build.py"])
+    # Lizenz: ohne sie dürfte niemand außer dem Autor die Software nutzen oder weitergeben
+    lizenz = read(ROOT / "LICENSE")
+    check("K1 LICENSE ist die MIT-Lizenz mit Jahr und Rechteinhaber",
+          [lizenz.startswith("MIT License"), "Copyright (c) 2026 Okami89AUT" in lizenz,
+           'WITHOUT WARRANTY OF ANY KIND' in lizenz, "IN NO EVENT SHALL THE" in lizenz], [True, True, True, True])
+    readme_txt = read(ROOT / "README.md")
+    check("K1 README nennt die Lizenz und den Gewährleistungsausschluss",
+          ["[MIT-Lizenz](LICENSE)" in readme_txt, "ohne jede Gewähr" in readme_txt.replace("**", "")], [True, True])
     gi = read(ROOT / ".gitignore").split()
     check("K1 .gitignore schließt Zwischenstände aus", [x in gi for x in ("__pycache__/", ".work/", "*.pyc", "*.zip", "out/", "dist/")], [True] * 6)
     kaputt = []
