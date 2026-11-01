@@ -2,6 +2,20 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.4.0 (01.11.2026)
+
+Mitgelieferte App auf v2.5 (Prüfungs-Chronik); der Baustein selbst ist unverändert.
+
+### Entscheidungen
+
+* **Der Baustein kennt die Bereiche nicht.** Die Chronik ist ein neuer Bereich im abgeglichenen Datenstand (`exams`). Weil der Server den Stand einer Person als Ganzes speichert und nur auf Größe und Form prüft, war am Baustein nichts zu ändern – der Schritt kostete hier genau eine Zeile: die mitgelieferte App.
+* **`schemaVersion` von 2 auf 3.** Ein neuer Bereich muss hochgezählt werden, sonst würde eine ältere App den Bereich beim Zurückschreiben verlieren. Ältere Geräte lehnen den neueren Stand deshalb bewusst ab und gleichen erst wieder ab, wenn auch sie auf v2.5 sind – lieber kein Abgleich als ein stiller Datenverlust.
+* **Kennungen werden beim Empfangen nie neu vergeben.** Eine Prüfung ohne brauchbare Kennung fällt weg, statt eine neue zu bekommen: sonst entstünde auf jedem Gerät eine andere Kennung und dieselbe Prüfung würde sich bei jedem Abgleich verdoppeln.
+
+### Prüfungen
+
+* Paket- und Serverprüfungen unverändert grün; die Versions-Mutanten zeigen jetzt auf 1.4.0 bzw. App v2.5.
+
 ## ✅ Version 1.3.0 (31.10.2026)
 
 Mitgelieferte App auf v2.4; der Baustein selbst ist unverändert.

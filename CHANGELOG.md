@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.4.0] – 2026-11-01
+
+Prüfungs-Chronik in der App (App v2.5).
+
+### Geändert
+- Mitgelieferte App von v2.4 auf v2.5: Die App führt jetzt eine Chronik der abgelegten Prüfungen (Grad, Datum, Prüfer, Notiz). Sie wird mitabgeglichen, steht im Backup und füllt „Aktuelles Kyu seit“ im Prüfungsziel; der nächste Grad wird als neues Ziel vorgeschlagen.
+- Am Baustein selbst ändert sich nichts: Er speichert den Datenstand einer Person als Ganzes, ohne die Bereiche zu kennen – die Schnittstelle bleibt unverändert (`api: 1`).
+
+### Hinweis
+- Der abgeglichene Datenstand hat jetzt `schemaVersion: 3` (vierter Bereich `exams`). Geräte mit App v2.4 oder älter erkennen diesen Stand als „neuer als ich“ und gleichen nicht mehr ab, bis sie ebenfalls auf v2.5 sind. Der auf dem Server gespeicherte Stand bleibt dabei unangetastet.
+
 ## [1.3.0] – 2026-10-31
 
 Der Server-Zugang bestimmt den Namen der Person (App v2.4).

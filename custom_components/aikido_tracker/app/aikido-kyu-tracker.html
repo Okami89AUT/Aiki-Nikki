@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.4)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.5)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -215,11 +215,68 @@
      im Abgleich, keine unnötigen Schreibvorgänge. Gegenprobe: 8 eingebaute Fehler, alle erkannt (einer begründet stehen gelassen).
      Gesamte Regression: 23 Läufe grün; zwei Prüfungen in s3 mussten nachgezogen werden, weil die Meldung "schon mit … verbunden"
      jetzt den Server-Namen nennt.
-  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.2.0 mit dieser App (Update über GitHub/HACS; je Release prüfen, ob die neue
-     Version auf dem Home Assistant ankommt, ggf. über den Konnektor "Home Ass") -> Prüfungs-Chronik -> Trainingseinheit mit Dauer + Stunden seit
-     letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
+  ✅ Version 2.5a — Prüfungs-Chronik, Teil 1: Daten (31.10.2026): Grundlage für die Chronik der abgelegten Prüfungen. Ein Eintrag ist
+     { id, kyu, date, examiner, note, createdAt }; gespeichert wird unter "aikido-exams" je Person (wie Verlauf, Links, Schwellen,
+     Ziel), also auch mit Rettungskopie bei unlesbaren Daten und mit Löschen beim Entfernen einer Person. Geprüft wird streng:
+     unbekannter oder nicht ganzzahliger Grad und kaputtes Datum werfen den Eintrag weg, fehlende Kennungen werden vergeben
+     (Zahlen werden zu Text, wie im Verlauf), doppelte Kennungen fallen weg, Prüfer (80) und Notiz (400) werden gekürzt, fremde
+     Felder fliegen raus — jeder Verlust wird gemeldet, damit die Rettungskopie bleibt. Reihenfolge: neueste Prüfung zuerst,
+     bei gleichem Datum entscheidet der Erfassungszeitpunkt, dann die Kennung. Backup: Export enthält die Chronik,
+     SCHEMA_VERSION steht jetzt auf 3; beim Import kommen nur neue Prüfungen dazu (doppelt = gleiche Kennung oder derselbe Grad am
+     selben Tag), Unbrauchbares wird gezählt, und ein Backup aus einer älteren Fassung (ohne Prüfungen) ändert die Chronik nicht.
+     Oberfläche und Abgleich folgen in 2.5b/2.5c.
+     Test: 27 neue Prüfungen (own/c1-chronik.js, Gruppen K1 Prüfregeln, K2 Speicherung je Person, K3 Backup) — zuerst rot, dann
+     grün. Gegenprobe: 28 eingebaute Fehler, alle erkannt. Gesamte Regression: 24 Läufe grün; in a6/a7a/s1/s2/s3 waren fünf
+     Prüfungen auf "Version 2" festgenagelt — sie fragen die Zahl jetzt bei der App ab, nur c1 nennt sie noch ausdrücklich.
+  ✅ Version 2.5b — Prüfungs-Chronik, Teil 2: Abgleich (01.11.2026): Die Chronik ist jetzt der fünfte Bereich des Abgleich-Stands
+     (neben Verlauf, Links, Ziel-Wiederholungen und Prüfungsziel) und wandert damit zwischen Handy und Laptop. Regeln wie beim
+     Verlauf, je Prüfung getrennt: auf einer Seite geändert -> diese Fassung; auf beiden verschieden -> die lokale (zählt als
+     Konflikt); auf einer Seite gelöscht und auf der anderen unverändert -> gelöscht; gelöscht gegen geändert -> die geänderte
+     Fassung bleibt. Fingerabdruck (digestDoc) deckt die Chronik mit ab; ein Digest, der VOR diesem Schritt gespeichert wurde,
+     bleibt gültig — die Chronik gilt dann als "beim letzten Abgleich nicht vorhanden", wird also vereinigt und nie gelöscht.
+     Serverdaten gelten als unvertrauenswürdig: Chronik in falscher Form macht den ganzen Stand unbrauchbar (nie als "leer"
+     lesen), eine Prüfung ohne brauchbare oder mit doppelter Kennung fällt weg (Kennungen werden hier nie neu vergeben, sonst
+     bekäme dieselbe Prüfung auf jedem Gerät eine andere und würde sich bei jedem Abgleich verdoppeln), Inhalt wird wie beim Laden
+     aus dem Speicher geprüft. Übernommen und gespeichert wird die Chronik nur, wenn sie sich wirklich unterscheidet.
+     Der Server selbst musste nicht angepasst werden: er speichert den Stand als Ganzes, ohne die Bereiche zu kennen.
+     Test: 22 neue Prüfungen (s1 Zusammenführen inkl. Referenzmodell und 3000 Zufallsfällen mit Chronik, s2 Fingerabdruck/
+     Serverprüfung/Übernahme) — zuerst rot, dann grün. Gegenprobe: s1 22 und s2 59 eingebaute Fehler, alle erkannt; dabei kamen
+     drei alte Fundstellen aus 2.4 ans Licht, die ins Leere zeigten (jetzt nachgezogen). Gesamte Regression: 24 Läufe grün.
+  ✅ Version 2.5c — Prüfungs-Chronik, Teil 3: Oberfläche (01.11.2026): Karte "Prüfungen" in der Übersicht (unter Bereitschaft und
+     Prüfungsziel), neueste Prüfung zuerst, je Zeile Grad, Datum, Prüfer und Notiz samt Knöpfen "Ändern" und "Löschen"; ohne
+     Prüfung steht dort ein Hinweis. Knopf "Prüfung eintragen" öffnet ein Fenster mit Grad (Vorschlag: das Ziel-Kyu), Datum
+     (Vorschlag: heute), Prüfer und Notiz. Geprüft wird vor dem Speichern: Grad muss gewählt sein, Datum gültig und nicht in der
+     Zukunft (eine Prüfung lässt sich erst nach dem Termin eintragen), und derselbe Grad am selben Tag ist nur einmal erlaubt —
+     beim Ändern zählt die eigene Prüfung dabei nicht als doppelt. Beim Ändern bleiben Kennung und Erfassungszeit erhalten
+     (sonst würde der Abgleich die Prüfung für eine neue halten). Löschen fragt nach, aus dem Fenster wie aus der Zeile.
+     Bedienung wie bei den anderen Fenstern: Esc und Klick auf den Hintergrund schließen, Tab bleibt drinnen, Enter in einem Feld
+     speichert, Tippen lässt die Meldung verschwinden, nach dem Schließen liegt der Fokus wieder auf "Prüfung eintragen".
+     Während das Fenster offen ist, übernimmt der Abgleich nichts (sonst springt die Eingabe weg).
+     Test: 53 neue Prüfungen (own/c2-chronik-ui.js, Gruppen L1 Karte, L2 Eintragen, L3 Ändern/Löschen, L4 Darstellung bei
+     320/390/768 px hell und dunkel) — zuerst rot, dann grün. Gegenprobe: 32 eingebaute Fehler, alle erkannt (einer überlebte
+     zuerst: eine leere Notiz-Zeile; die Prüfung verlangt jetzt, dass ohne Notiz gar keine Zeile entsteht).
+     Gesamte Regression: 25 Läufe grün.
+  ✅ Version 2.5 — Prüfungs-Chronik fertig, Teil 4: Verknüpfung mit dem Prüfungsziel (01.11.2026): Die Chronik weiß jetzt, welchen
+     Grad du hast. "Aktuelles Kyu seit" wird aus der Prüfung gefüllt, mit der du den aktuellen Grad erreicht hast (höchster
+     bestandener Grad = kleinste Kyu-Zahl, bei mehreren am selben Grad die neueste), das Feld ist dann gesperrt und sagt, woher
+     das Datum kommt — das von Hand eingetragene Datum bleibt gespeichert und gilt wieder, wenn die Chronik leer ist. Die
+     Mindest-Trainingszeit rechnet mit diesem Datum. Gibt es einen nächsten Grad (eine Stufe höher, nach dem 1. Kyu ist im
+     Programm Schluss), schlägt die Karte "Prüfungsziel" ihn vor ("Als Ziel übernehmen"), der Bereitschafts-Ring zeigt ihn schon
+     ohne gesetztes Ziel, und das Fenster "Prüfung eintragen" schlägt ihn als Grad vor. Die Karte "Prüfungen" nennt oben den
+     aktuellen Grad samt Datum.
+     Test: 13 neue Prüfungen (own/c2-chronik-ui.js, Gruppe L5) — zuerst rot, dann grün; zwei davon mussten geschärft werden,
+     weil Ziel-Grad und Chronik-Vorschlag im Beispiel zufällig gleich waren und ein Fehler so unsichtbar geblieben wäre.
+     Gegenprobe zum Release: s1 22, s2 59, s3 162, s4 73, s5 28, c1 28, c2 46 eingebaute Fehler — alle erkannt.
+     Gesamte Regression: 25 Läufe grün. (Ein Lauf war einmal rot und beim Wiederholen sauber — eine Zeitüberschreitung unter
+     Last, kein Fehler in der App.)
+     Bekannte Grenzen: Dan-Grade kennt das Programm nicht. Wird eine NIEDRIGERE Prüfung nachträglich mit späterem Datum
+     eingetragen, bleibt "Aktuelles Kyu seit" beim höheren Grad — das ist so gewollt.
+  ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.4.0 mit dieser App -> 2.6 Übersicht neu ordnen
+     (Trainings-Rhythmus kostet 237 von 2042 px und sagt wenig; "Braucht Aufmerksamkeit" kürzen; Abgleich/Backup/Version in einen
+     eigenen Bereich "Verwaltung") -> Trainingseinheit mit Dauer + Stunden seit letzter Prüfung -> .ics-Erinnerungen -> Wochenziel.
      Später/optional: B Handy/Barrierefreiheit, C Bedienung, D Datenmodell, Web-App/Veröffentlichen (Schriften selbst einbetten,
-     Impressum/Datenschutz), NAS.
+     Impressum/Datenschutz), NAS. Offen aus dem Betrieb: schwacher Einladungscode am Home Assistant ersetzen; eigene
+     Verwaltungs-Oberfläche im Baustein statt der Hilfs-Helfer im Dashboard.
   Alle Original-Techniken/-Daten unverändert. Bei Fortsetzung in neuem Chat:
   diese Datei hochladen, "weiter mit Schritt X" sagen.
 -->
@@ -871,6 +928,47 @@
   }
   [data-theme="dark"] .profile-add-btn { color: var(--c-bg); }
   /* ------------------------------------------------------------------
+     KOMPONENTE: Prüfungs-Chronik (Karte in der Uebersicht + Fenster zum Eintragen)
+     ------------------------------------------------------------------ */
+  .dash-exams-card { margin-bottom: 14px; }
+  .exam-current { font-size: 12.5px; color: var(--c-ink-muted); margin: 0 0 10px; }
+  .target-next-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: var(--c-ink-muted); margin: 8px 0 0; }
+  .kyu-since-note { font-size: 12px; color: var(--c-ink-muted); margin: 6px 0 0; line-height: 1.45; }
+  .exam-list { display: flex; flex-direction: column; }
+  .exam-row {
+    display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; justify-content: space-between;
+    padding: 10px 0; border-top: 1px solid var(--c-border);
+  }
+  .exam-row:first-child { border-top: 0; padding-top: 2px; }
+  .exam-row-main { flex: 1 1 150px; min-width: 0; }
+  .exam-row-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+  .exam-row-kyu { font-size: 15px; font-weight: 600; color: var(--c-ink); }
+  .exam-row-date { font-size: 13px; color: var(--c-ink-soft); }
+  .exam-row-meta { font-size: 12.5px; color: var(--c-ink-muted); margin: 2px 0 0; overflow-wrap: anywhere; }
+  .exam-row-note { font-size: 12.5px; color: var(--c-ink-soft); margin: 4px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+  .exam-row-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 0 auto; }
+  .exam-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .exam-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px;
+    background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-ink-soft); border-radius: 999px;
+    font-size: 14px; font-family: inherit; cursor: pointer; text-align: center; line-height: 1.25;
+  }
+  .exam-btn:hover { border-color: var(--c-accent-soft); }
+  .exam-btn.primary { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-accent-contrast); font-weight: 500; }
+  [data-theme="dark"] .exam-btn.primary { color: var(--c-bg); }
+  .exam-btn.danger { color: var(--c-error-text); border-color: var(--c-border); }
+  .exam-btn.small { min-height: 40px; padding: 6px 14px; font-size: 13px; }
+  .exam-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .exam-panel { max-width: 460px; }
+  .exam-panel .modal-body { gap: 14px; }
+  .exam-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--c-ink-soft); }
+  .exam-field select, .exam-field input, .exam-field textarea {
+    min-height: 44px; padding: 8px 12px; font-family: inherit; font-size: 16px; color: var(--c-ink);
+    background: var(--c-surface-alt); border: 1px solid var(--c-border); border-radius: 12px; width: 100%; box-sizing: border-box;
+  }
+  .exam-field textarea { min-height: 72px; resize: vertical; line-height: 1.5; }
+  .exam-panel .modal-footer { justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  /* ------------------------------------------------------------------
      KOMPONENTE: Abgleich (Karte in der Uebersicht + Fenster zum Verbinden)
      ------------------------------------------------------------------ */
   .dash-sync-card { margin-bottom: 14px; }
@@ -1123,6 +1221,7 @@
 <div id="terms-modal-overlay" class="modal-overlay" hidden></div>
 <div id="profile-modal-overlay" class="modal-overlay" hidden></div>
 <div id="sync-modal-overlay" class="modal-overlay" hidden></div>
+<div id="exam-modal-overlay" class="modal-overlay" hidden></div>
 
 <script>
 /* QR Code Generator for JavaScript — Copyright (c) 2009 Kazuhiko Arase, MIT-Lizenz
@@ -1702,6 +1801,9 @@ const EXAM_TARGET_KEY = "aikido-exam-target";
 const TECH_LINKS_KEY = "aikido-tech-links";
 
 const TECH_THRESHOLDS_KEY = "aikido-tech-thresholds";
+const EXAMS_KEY = "aikido-exams";                   // Chronik der abgelegten Prüfungen (je Person)
+const MAX_EXAM_EXAMINER = 80;                       // Zeichen für "Prüfer/Dojo"
+const MAX_EXAM_NOTE = 400;                          // Zeichen für die Notiz
 
 const RESCUE_KEY = "aikido-rescue"; // Kopien unlesbarer Originaldaten (siehe Abschnitt 6)
 
@@ -1716,12 +1818,12 @@ const DEFAULT_PROFILE_NAME = "Ich";
 const FALLBACK_PROFILE_NAME = "Person";
 const MAX_PROFILES = 12;
 const MAX_PROFILE_NAME = 40;                        // Zeichen (Unicode-Zeichen, nicht UTF-16-Einheiten)
-const PERSON_KEYS = [STORAGE_KEY, EXAM_TARGET_KEY, TECH_LINKS_KEY, TECH_THRESHOLDS_KEY];
+const PERSON_KEYS = [STORAGE_KEY, EXAM_TARGET_KEY, TECH_LINKS_KEY, TECH_THRESHOLDS_KEY, EXAMS_KEY];
 
 const RECENT_DAYS = 14;
 
 /* Sicherung/Import: Dateiformat-Version und Grenzen */
-const SCHEMA_VERSION = 2;               // Format der Backup-Datei (wird bei Formatänderungen erhöht). 1: IDs mit Listenposition, 2: ohne
+const SCHEMA_VERSION = 3;               // Format der Backup-Datei (wird bei Formatänderungen erhöht). 1: IDs mit Listenposition, 2: ohne, 3: mit Prüfungs-Chronik
 const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_ENTRIES = 20000;        // der Verlauf listet alles auf einmal: mehr Einträge würden den Browser ausbremsen
 const MAX_URL_LENGTH = 2000;            // längere Adressen passen nicht mehr in einen QR-Code
@@ -1732,8 +1834,8 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.4";
-const APP_VERSION_DATE = "2026-10-31";  // Stand: Kalendertag der Auslieferung
+const APP_VERSION = "2.5";
+const APP_VERSION_DATE = "2026-11-01";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
    3. ANWENDUNGS-STATUS
@@ -1767,6 +1869,7 @@ let solarFamily = null;
 let solarDetailTechnik = null; // Name der Technik, deren Verlaufs-Detail gerade offen ist
 
 let techThresholds = {}; // techniqueId -> individuelles Wiederholungs-Ziel (Default: DEFAULT_THRESHOLD)
+let exams = [];          // Chronik der abgelegten Prüfungen der aktiven Person, neueste zuerst (Abschnitt 5b)
 
 let sessionSelected = new Set(); // Technik-IDs für die Trainingstag-Schnellerfassung
 
@@ -2054,6 +2157,7 @@ async function persist(key, value) {
 const STORAGE_LABELS = { // Reihenfolge = Reihenfolge in Meldungen (Schlüssel einer Person: ohne "@Kennung", siehe baseKey)
   [PROFILES_KEY]: "Personen",
   [STORAGE_KEY]: "Trainingsverlauf", [TECH_LINKS_KEY]: "Links", [TECH_THRESHOLDS_KEY]: "Ziel-Wiederholungen", [EXAM_TARGET_KEY]: "Prüfungsziel",
+  [EXAMS_KEY]: "Prüfungen",
 };
 
 function rememberOriginal(key, raw) {
@@ -2153,6 +2257,72 @@ function cleanExamTargetStored(parsed) {
   return { value, lossy: foreign || dropped };
 }
 
+/* Eine abgelegte Prüfung: { id, kyu, date, examiner, note, createdAt }. Grad und Datum müssen stimmen, sonst ist der
+   Eintrag nicht zu retten; Texte werden bereinigt und gekappt. seen = schon vergebene Kennungen (doppelte fallen weg). */
+function examRawId(raw) {
+  if (!isPlainObject(raw)) return "";
+  return typeof raw.id === "string" && raw.id.trim() && raw.id.length <= MAX_ENTRY_ID ? raw.id : (Number.isFinite(raw.id) ? String(raw.id) : "");
+}
+
+function cleanExamEntry(raw, seen) {
+  if (!isPlainObject(raw)) return null;
+  if (!Number.isInteger(raw.kyu) || !KYUS.includes(raw.kyu)) return null;
+  if (typeof raw.date !== "string" || !parseIso(raw.date)) return null;
+  let id = examRawId(raw);
+  let lossy = !id;
+  if (!id) id = newExamId(seen);
+  if (seen.has(id)) return null;
+  seen.add(id);
+  const text = (v, max) => {
+    if (typeof v !== "string") return { value: "", lossy: v !== undefined && v !== null && v !== "" };
+    const clean = v.replace(/\s+/g, " ").trim();
+    return { value: [...clean].slice(0, max).join("").trim(), lossy: profileNameLength(clean) > max };
+  };
+  const examiner = text(raw.examiner, MAX_EXAM_EXAMINER);
+  const note = typeof raw.note === "string" ? { value: [...raw.note].slice(0, MAX_EXAM_NOTE).join(""), lossy: [...raw.note].length > MAX_EXAM_NOTE } : text(raw.note, MAX_EXAM_NOTE);
+  const createdAt = typeof raw.createdAt === "string" && !Number.isNaN(Date.parse(raw.createdAt)) ? raw.createdAt : "";
+  const known = ["id", "kyu", "date", "examiner", "note", "createdAt"];
+  const foreign = Object.keys(raw).some((k) => !known.includes(k));
+  return { entry: { id, kyu: raw.kyu, date: raw.date, examiner: examiner.value, note: note.value, createdAt }, lossy: lossy || examiner.lossy || note.lossy || foreign };
+}
+
+/* Kennung für eine Prüfung (wie bei Trainingseinträgen: Zeitpunkt + Zufall, damit zwei Geräte sich nie treffen) */
+function newExamId(seen) {
+  let id;
+  do { id = `pr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; } while (seen && seen.has(id));
+  return id;
+}
+
+/* Neueste Prüfung zuerst; bei gleichem Datum entscheidet der Zeitpunkt der Erfassung, dann die Kennung (immer gleich). */
+function compareExams(a, b) {
+  const text = (v) => (typeof v === "string" ? v : "");
+  if (text(a.date) !== text(b.date)) return text(a.date) < text(b.date) ? 1 : -1;
+  if (text(a.createdAt) !== text(b.createdAt)) return text(a.createdAt) < text(b.createdAt) ? 1 : -1;
+  return text(a.id) < text(b.id) ? 1 : -1;
+}
+
+function cleanExamsStored(parsed) {
+  if (!Array.isArray(parsed)) return null;
+  const seen = new Set();
+  const value = [];
+  let lossy = false;
+  parsed.forEach((raw) => {
+    const checked = cleanExamEntry(raw, seen);
+    if (!checked) { lossy = true; return; }
+    if (checked.lossy) lossy = true;
+    value.push(checked.entry);
+  });
+  value.sort(compareExams);
+  return { value, lossy };
+}
+
+async function readExams(id) {
+  const list = await loadChecked(EXAMS_KEY, cleanExamsStored, id);
+  return list || [];
+}
+
+async function saveExams() { return persist(EXAMS_KEY, JSON.stringify(exams)); }
+
 async function readLog(id) {
   const entries = await loadChecked(STORAGE_KEY, cleanLogList, id);
   return entries || [];
@@ -2227,8 +2397,8 @@ async function readTechThresholds(id) {
 
 /* Alle vier Bereiche einer Person lesen / als Stand der App übernehmen (die Übernahme geschieht ohne await) */
 async function readPersonData(id) {
-  const [entries, target, links, thresholds, sync] = await Promise.all([readLog(id), readExamTarget(id), readTechLinks(id), readTechThresholds(id), readSyncState(id)]);
-  return { log: entries, examTarget: target, techLinks: links, techThresholds: thresholds, sync }; // sync: die Verbindung dieser Person (Abschnitt 6e)
+  const [entries, target, links, thresholds, examList, sync] = await Promise.all([readLog(id), readExamTarget(id), readTechLinks(id), readTechThresholds(id), readExams(id), readSyncState(id)]);
+  return { log: entries, examTarget: target, techLinks: links, techThresholds: thresholds, exams: examList, sync }; // sync: die Verbindung dieser Person (Abschnitt 6e)
 }
 
 function applyPersonData(id, data) {
@@ -2237,6 +2407,7 @@ function applyPersonData(id, data) {
   examTarget = data.examTarget;
   techLinks = data.techLinks;
   techThresholds = data.techThresholds;
+  exams = data.exams;
   syncState = data.sync.state;
   syncUnreadable = data.sync.unreadable;
   syncFailures = 0;
@@ -2271,7 +2442,7 @@ function saveJsonFile(payload, filename) {
 function exportData() {
   saveJsonFile({
     app: "aikido-kyu-tracker", schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(),
-    log, techLinks, techThresholds, examTarget,
+    log, techLinks, techThresholds, examTarget, exams,
   }, `aikido-training-backup-${todayStr()}.json`);
   showToast("Backup wird heruntergeladen.");
 }
@@ -2319,7 +2490,7 @@ function sanitizeLogEntry(raw) {
 function planImport(data) {
   const plan = {
     total: data.log.length, entries: [], duplicates: 0, invalid: 0, ignored: 0,
-    links: {}, thresholds: {}, target: {},
+    links: {}, thresholds: {}, target: {}, exams: [],
     newerVersion: Number(data.schemaVersion) > SCHEMA_VERSION,
   };
 
@@ -2337,6 +2508,23 @@ function planImport(data) {
     ids.add(entry.id);
     plan.entries.push(entry);
   });
+
+  /* Prüfungen: doppelt = gleiche Kennung oder derselbe Grad am selben Tag. */
+  if (Array.isArray(data.exams)) {
+    const vorhanden = new Set(exams.map((p) => p.id));
+    const tage = new Set(exams.map((p) => `${p.kyu}|${p.date}`));
+    const inDatei = new Set(); // Kennungen, die in dieser Datei schon vorkamen
+    data.exams.forEach((raw) => {
+      const rohId = examRawId(raw);
+      const checked = cleanExamEntry(raw, inDatei);
+      if (!checked) { if (rohId && inDatei.has(rohId)) plan.duplicates++; else plan.invalid++; return; }
+      const p = checked.entry;
+      if (vorhanden.has(p.id) || tage.has(`${p.kyu}|${p.date}`)) { plan.duplicates++; return; }
+      vorhanden.add(p.id);
+      tage.add(`${p.kyu}|${p.date}`);
+      plan.exams.push(p);
+    });
+  }
 
   /* Links: nur bekannte Techniken + echte http/https-Adressen; ein vorhandener Link bleibt. */
   if (isPlainObject(data.techLinks)) {
@@ -2375,7 +2563,7 @@ function planImport(data) {
 }
 
 function importCounts(plan) {
-  return { entries: plan.entries.length, links: Object.keys(plan.links).length, thresholds: Object.keys(plan.thresholds).length, target: Object.keys(plan.target).length };
+  return { entries: plan.entries.length, links: Object.keys(plan.links).length, thresholds: Object.keys(plan.thresholds).length, target: Object.keys(plan.target).length, exams: plan.exams.length };
 }
 
 /* "vom 12.10.2026" in LOKALER Zeit (exportedAt ist ein UTC-Zeitstempel) */
@@ -2392,6 +2580,7 @@ function importQuestion(plan, data, c) {
     `Schon vorhanden: ${plan.duplicates}`,
     `Übersprungen (ungültig): ${plan.invalid}`,
   ];
+  if (c.exams) lines.push(`Neue Prüfungen: ${c.exams}`);
   if (c.links) lines.push(`Neue Links: ${c.links}`);
   if (c.thresholds) lines.push(`Neue Ziel-Wiederholungen: ${c.thresholds}`);
   if (c.target) lines.push("Prüfungsziel: fehlende Angaben werden ergänzt");
@@ -2406,6 +2595,7 @@ function importSummary(plan, c) {
   if (c.entries) parts.push(plural(c.entries, "neuer Eintrag", "neue Einträge"));
   if (plan.duplicates) parts.push(`${plan.duplicates} schon vorhanden`);
   if (plan.invalid) parts.push(`${plan.invalid} ungültig übersprungen`);
+  if (c.exams) parts.push(plural(c.exams, "neue Prüfung", "neue Prüfungen"));
   if (c.links) parts.push(plural(c.links, "neuer Link", "neue Links"));
   if (c.thresholds) parts.push(plural(c.thresholds, "Ziel-Wiederholung", "Ziel-Wiederholungen"));
   if (c.target) parts.push("Prüfungsziel ergänzt");
@@ -2426,7 +2616,7 @@ async function applyImport(text) {
   const plan = planImport(data);
   const c = importCounts(plan);
   const summary = importSummary(plan, c);
-  if (!c.entries && !c.links && !c.thresholds && !c.target) {
+  if (!c.entries && !c.links && !c.thresholds && !c.target && !c.exams) {
     showToast(`Nichts Neues im Backup${summary ? ": " + summary : ""}.`, 7000);
     return;
   }
@@ -2435,8 +2625,9 @@ async function applyImport(text) {
   Object.assign(techLinks, plan.links);
   Object.assign(techThresholds, plan.thresholds);
   Object.assign(examTarget, plan.target);
+  exams = exams.concat(plan.exams).sort(compareExams);
   renderAll();
-  const saved = await Promise.all([saveLog(), saveTechLinks(), saveTechThresholds(), saveExamTarget()]);
+  const saved = await Promise.all([saveLog(), saveTechLinks(), saveTechThresholds(), saveExamTarget(), saveExams()]);
   if (saved.every(Boolean)) showToast(`Import abgeschlossen: ${summary}.`, 7000);
 }
 
@@ -2923,7 +3114,7 @@ function stableStringify(value) {
 function docsEqual(a, b) { return stableStringify(a) === stableStringify(b); }
 
 function emptySyncDoc() {
-  return { schemaVersion: SCHEMA_VERSION, log: [], techLinks: {}, techThresholds: {}, examTarget: emptyExamTarget() };
+  return { schemaVersion: SCHEMA_VERSION, log: [], techLinks: {}, techThresholds: {}, examTarget: emptyExamTarget(), exams: [] };
 }
 
 /* Reihenfolge im Verlauf: Datum absteigend, dann createdAt absteigend, dann ID aufsteigend */
@@ -3000,20 +3191,25 @@ function docMaps(doc) {
     examTarget: new Map(EXAM_TARGET_FIELDS
       .filter((f) => isPlainObject(doc) && isPlainObject(doc.examTarget) && doc.examTarget[f] != null && doc.examTarget[f] !== "")
       .map((f) => [f, doc.examTarget[f]])),
+    exams: new Map((isPlainObject(doc) && Array.isArray(doc.exams) ? doc.exams : []).filter((p) => isPlainObject(p) && typeof p.id === "string").map((p) => [p.id, p])),
   };
 }
 
 /* Digest = Fingerabdruck je Schlüssel statt einer vollen Kopie des Stands (rund 7x weniger Platz). Genau das braucht der
    Drei-Wege-Abgleich von "base": ob sich ein Wert seit dem letzten Abgleich geändert hat. */
 const DIGEST_MARK = 1;
+const DIGEST_AREAS = ["log", "techLinks", "techThresholds", "examTarget", "exams"];
+/* "exams" darf fehlen: ein Digest, der vor 2.5b gespeichert wurde, bleibt gültig — die Chronik gilt dann als
+   "beim letzten Abgleich nicht vorhanden", also wird sie beim ersten Abgleich danach vereinigt und nichts gelöscht. */
 function isDigest(x) {
-  return isPlainObject(x) && x.d === DIGEST_MARK && isPlainObject(x.log) && isPlainObject(x.techLinks) && isPlainObject(x.techThresholds) && isPlainObject(x.examTarget);
+  return isPlainObject(x) && x.d === DIGEST_MARK && isPlainObject(x.log) && isPlainObject(x.techLinks) && isPlainObject(x.techThresholds) && isPlainObject(x.examTarget)
+    && (x.exams === undefined || isPlainObject(x.exams));
 }
 
 function digestDoc(doc) {
   const maps = docMaps(doc);
   const digest = { d: DIGEST_MARK };
-  ["log", "techLinks", "techThresholds", "examTarget"].forEach((name) => {
+  DIGEST_AREAS.forEach((name) => {
     const part = {};
     maps[name].forEach((value, key) => Object.defineProperty(part, key, { value: valueHash(value), enumerable: true, writable: true, configurable: true }));
     digest[name] = part;
@@ -3023,8 +3219,9 @@ function digestDoc(doc) {
 
 function digestMaps(digest) {
   const out = {};
-  ["log", "techLinks", "techThresholds", "examTarget"].forEach((name) => {
-    out[name] = new Map(Object.keys(digest[name]).filter((k) => typeof digest[name][k] === "string").map((k) => [k, digest[name][k]]));
+  DIGEST_AREAS.forEach((name) => {
+    const part = isPlainObject(digest[name]) ? digest[name] : {};   // fehlender Bereich (alter Digest) = leer
+    out[name] = new Map(Object.keys(part).filter((k) => typeof part[k] === "string").map((k) => [k, part[k]]));
   });
   return out;
 }
@@ -3037,6 +3234,7 @@ function mergeDocs(base, local, remote) {
   const linkPart = mergeKeyed(baseHashes.techLinks, L.techLinks, R.techLinks, preferLaterLink);
   const thresholdPart = mergeKeyed(baseHashes.techThresholds, L.techThresholds, R.techThresholds, preferLocalValue);
   const targetPart = mergeKeyed(baseHashes.examTarget, L.examTarget, R.examTarget, preferLocalValue);
+  const examsPart = mergeKeyed(baseHashes.exams, L.exams, R.exams, preferLocalValue);
   const examTargetResult = emptyExamTarget();
   targetPart.map.forEach((value, field) => { examTargetResult[field] = value; });
   return {
@@ -3046,8 +3244,9 @@ function mergeDocs(base, local, remote) {
       techLinks: objectFromMap(linkPart.map),
       techThresholds: objectFromMap(thresholdPart.map),
       examTarget: examTargetResult,
+      exams: [...examsPart.map.values()].sort(compareExams),
     },
-    conflicts: logPart.conflicts + linkPart.conflicts + thresholdPart.conflicts + targetPart.conflicts,
+    conflicts: logPart.conflicts + linkPart.conflicts + thresholdPart.conflicts + targetPart.conflicts + examsPart.conflicts,
   };
 }
 
@@ -3058,7 +3257,7 @@ function mergeDocs(base, local, remote) {
    unbrauchbar (null) — nie als "leer" lesen, sonst würde ein Abgleich den Server-Stand überschreiben.
    Ergebnis { doc, dropped, unsupported } oder null. unsupported: Stand aus neuerer App-Version oder mit unbekannten Teilen —
    so etwas darf diese Version nie zurückschreiben, sonst gingen die fremden Teile verloren. */
-const SYNC_DOC_KEYS = ["schemaVersion", "log", "techLinks", "techThresholds", "examTarget"];
+const SYNC_DOC_KEYS = ["schemaVersion", "log", "techLinks", "techThresholds", "examTarget", "exams"];
 const MAX_ENTRY_ID = 200;
 
 function syncEntryId(entry) {
@@ -3070,9 +3269,10 @@ function syncEntryId(entry) {
 function sanitizeSyncDoc(raw) {
   if (!isPlainObject(raw)) return null;
   const logRaw = raw.log === undefined ? [] : raw.log;
+  const examsRaw = raw.exams === undefined ? [] : raw.exams;
   const area = (v) => (v === undefined ? {} : isPlainObject(v) ? v : null);
   const linksRaw = area(raw.techLinks), thresholdsRaw = area(raw.techThresholds), targetRaw = area(raw.examTarget);
-  if (!Array.isArray(logRaw) || !linksRaw || !thresholdsRaw || !targetRaw) return null;
+  if (!Array.isArray(logRaw) || !Array.isArray(examsRaw) || !linksRaw || !thresholdsRaw || !targetRaw) return null;
   let dropped = 0;
 
   const seen = new Set();
@@ -3088,6 +3288,21 @@ function sanitizeSyncDoc(raw) {
   });
   entries.sort(compareLogEntries);
 
+  /* Chronik: Kennung wie beim Verlauf (ohne/doppelt fällt weg, nie neu vergeben — sonst entstünde auf jedem Gerät eine
+     andere Kennung und die Prüfung würde sich bei jedem Abgleich verdoppeln), Inhalt wie beim Laden aus dem Speicher. */
+  const examsSeen = new Set();
+  const examList = [];
+  examsRaw.forEach((item) => {
+    const id = isPlainObject(item) ? syncEntryId(item) : null;
+    if (id === null || examsSeen.has(id)) { dropped++; return; }
+    const copy = deepCopy(item);   // ein eigener Schlüssel "__proto__" bleibt dabei ein gewöhnlicher Schlüssel …
+    copy.id = id;
+    const checked = cleanExamEntry(copy, examsSeen);   // … und fällt hier weg, weil nur die bekannten Felder übernommen werden
+    if (!checked) { dropped++; return; }
+    examList.push(checked.entry);
+  });
+  examList.sort(compareExams);
+
   const links = cleanLinksStored(deepCopy(linksRaw)).value;
   dropped += Object.keys(linksRaw).length - Object.keys(links).length;
   const thresholds = cleanThresholdsStored(deepCopy(thresholdsRaw)).value;
@@ -3101,7 +3316,7 @@ function sanitizeSyncDoc(raw) {
   const version = typeof raw.schemaVersion === "number" ? raw.schemaVersion : typeof raw.schemaVersion === "string" ? Number(raw.schemaVersion) : 0;
   const unsupported = version > SCHEMA_VERSION || Object.keys(raw).some((k) => !SYNC_DOC_KEYS.includes(k));
   return {
-    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: links, techThresholds: thresholds, examTarget: examTargetValue },
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: links, techThresholds: thresholds, examTarget: examTargetValue, exams: examList },
     dropped,
     unsupported,
   };
@@ -3127,7 +3342,7 @@ function currentLocalDoc() {
   });
   entries.sort(compareLogEntries);
   return {
-    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: deepCopy(techLinks), techThresholds: deepCopy(techThresholds), examTarget: deepCopy(examTarget) },
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: deepCopy(techLinks), techThresholds: deepCopy(techThresholds), examTarget: deepCopy(examTarget), exams: deepCopy(exams) },
     localOnly,
   };
 }
@@ -3141,6 +3356,7 @@ function applyMergedDoc(doc, localOnly) {
   if (!docsEqual(before.techLinks, doc.techLinks)) { techLinks = deepCopy(doc.techLinks); saves.push(saveTechLinks()); }
   if (!docsEqual(before.techThresholds, doc.techThresholds)) { techThresholds = deepCopy(doc.techThresholds); saves.push(saveTechThresholds()); }
   if (!docsEqual(before.examTarget, doc.examTarget)) { examTarget = deepCopy(doc.examTarget); saves.push(saveExamTarget()); }
+  if (!docsEqual(before.exams, doc.exams)) { exams = deepCopy(doc.exams); saves.push(saveExams()); }
   if (!saves.length) { syncApplying = false; return Promise.resolve(true); }
   renderAll();
   return Promise.all(saves).then((results) => { syncApplying = false; return results.every(Boolean); });
@@ -3578,7 +3794,7 @@ function syncCanAuto() {
    unter den Händen wegspringen. */
 function syncWouldDisturb() {
   if (profileBusy || syncConnecting) return true;
-  const offen = ["session-modal-overlay", "terms-modal-overlay", "profile-modal-overlay", "sync-modal-overlay"]
+  const offen = ["session-modal-overlay", "terms-modal-overlay", "profile-modal-overlay", "sync-modal-overlay", "exam-modal-overlay"]
     .some((id) => { const el = document.getElementById(id); return el && !el.hidden; });
   if (offen) return true;
   const active = document.activeElement;
@@ -3742,7 +3958,7 @@ function syncCardHTML() {
         <h3 class="dash-card-title">Abgleich <span class="dash-card-sub">${connected ? esc(syncState.name) : "nicht verbunden"}</span></h3>
         <p class="sync-status${problem ? " error" : ""}" id="sync-status-text">${esc(syncStatusText())}</p>
         ${connected && syncNameBlocked ? `<p class="sync-status error">Der Name „${esc(syncState.name)}“ ist hier schon an eine andere Person vergeben — diese Person heißt deshalb weiterhin „${esc((profiles.find((p) => p.id === activeProfileId) || { name: "" }).name)}“. Bitte die andere Person umbenennen.</p>` : ""}
-        ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
+        ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Prüfungen, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
         <div class="sync-actions">${buttons}</div>
       </div>`;
 }
@@ -3903,6 +4119,232 @@ function trapSyncTab(e) {
   if (!items.length) return;
   const first = items[0], last = items[items.length - 1], a = document.activeElement;
   if (e.shiftKey && (a === first || !panel.contains(a) || a === document.getElementById("sync-title"))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (a === last || !panel.contains(a))) { e.preventDefault(); first.focus(); }
+}
+
+/* ======================================================================
+   7c. OBERFLÄCHE: PRÜFUNGS-CHRONIK (Karte "Prüfungen" + Fenster zum Eintragen/Ändern/Löschen)
+   ----------------------------------------------------------------------
+   Die Karte zeigt die Prüfungen der aktiven Person, neueste zuerst. Gespeichert wird erst beim Speichern im Fenster;
+   schlägt das Speichern fehl, bleibt der vorherige Stand stehen (das Fehlerbanner kommt aus persist).
+   ====================================================================== */
+let examDialogId = null;     // null = neue Prüfung, sonst die Kennung der Prüfung, die geändert wird
+let examDialogBusy = false;  // während des Speicherns kein zweiter Durchlauf
+
+function examRowHTML(p) {
+  return `
+        <div class="exam-row" data-id="${esc(p.id)}">
+          <div class="exam-row-main">
+            <div class="exam-row-head">
+              <span class="exam-row-kyu">${p.kyu}. Kyu</span>
+              <span class="exam-row-date">${formatDate(p.date)}</span>
+            </div>
+            ${p.examiner ? `<p class="exam-row-meta">${esc(p.examiner)}</p>` : ""}
+            ${p.note ? `<p class="exam-row-note">${esc(p.note)}</p>` : ""}
+          </div>
+          <div class="exam-row-actions">
+            <button type="button" class="exam-btn small" data-action="exam-edit">Ändern</button>
+            <button type="button" class="exam-btn small" data-action="exam-delete">Löschen</button>
+          </div>
+        </div>`;
+}
+
+/* ----- Verknüpfung mit dem Prüfungsziel (2.5d) -------------------------------------------------------------------
+   Aktueller Grad = der höchste bestandene (kleinste Kyu-Zahl) aus der Chronik; "Aktuelles Kyu seit" ist das Datum
+   genau dieser Prüfung. Das von Hand eingetragene Datum bleibt gespeichert — es wird nur nicht mehr verwendet,
+   solange es eine Chronik gibt (sonst ginge beim Löschen der Prüfungen die Eingabe verloren). */
+function currentExamGrade() {
+  const grade = exams.reduce((best, p) => (best === null || p.kyu < best ? p.kyu : best), null);
+  return KYUS.includes(grade) ? grade : null;
+}
+
+/* Die Prüfung, mit der der aktuelle Grad erreicht wurde (bei mehreren am selben Grad die neueste) */
+function currentGradeExam() {
+  const grade = currentExamGrade();
+  if (grade === null) return null;
+  return exams.filter((p) => p.kyu === grade).sort(compareExams)[0] || null;
+}
+
+/* Der nächste Grad im Programm (eine Stufe höher = kleinere Zahl). Nach dem 1. Kyu gibt es hier keinen mehr. */
+function nextExamGrade() {
+  const now = currentExamGrade();
+  if (now === null) return null;
+  return KYUS.includes(now - 1) ? now - 1 : null;
+}
+
+function effectiveKyuSince() {
+  const exam = currentGradeExam();
+  return exam ? exam.date : examTarget.currentKyuSince;
+}
+
+async function adoptNextGradeAsTarget() {
+  const next = nextExamGrade();
+  if (next === null || examTarget.kyu === next) return false;
+  const before = examTarget;
+  examTarget = Object.assign({}, examTarget, { kyu: next });
+  const ok = await saveExamTarget();
+  if (!ok) { examTarget = before; renderAll(); return false; }
+  renderAll();
+  showToast(`Neues Prüfungsziel: ${next}. Kyu.`);
+  return true;
+}
+
+function examsCardHTML() {
+  const aktuell = currentGradeExam();
+  const list = exams.length
+    ? exams.slice().sort(compareExams).map(examRowHTML).join("")   // die Karte sortiert selbst: neueste Prüfung zuerst
+    : '<p class="empty-state">Noch keine Prüfung eingetragen.</p>';
+  return `
+      <div class="dash-card dash-exams-card" id="exams-card">
+        <h3 class="dash-card-title">Prüfungen</h3>
+        ${aktuell ? `<p class="exam-current">Aktuell: ${aktuell.kyu}. Kyu seit ${formatDate(aktuell.date)}</p>` : ""}
+        <div class="exam-list">${list}</div>
+        <div class="exam-actions">
+          <button type="button" class="exam-btn primary" data-action="exam-add">Prüfung eintragen</button>
+        </div>
+      </div>`;
+}
+
+/* Nur die Karte neu aufbauen (z.B. nach dem Speichern), ohne die ganze Übersicht anzufassen */
+function renderExamsCard() {
+  const slot = document.getElementById("exams-card-slot");
+  if (slot) slot.innerHTML = examsCardHTML();
+}
+
+function examModalHTML() {
+  const edit = exams.find((p) => p.id === examDialogId) || null;
+  const naechster = nextExamGrade();   // nach der letzten Prüfung ist der nächste Grad der wahrscheinlichste Eintrag
+  const kyu = edit ? edit.kyu : (naechster !== null ? naechster : KYUS.includes(examTarget.kyu) ? examTarget.kyu : activeKyu);
+  const date = edit ? edit.date : todayStr();
+  return `
+    <div class="modal-panel exam-panel" role="dialog" aria-modal="true" aria-labelledby="exam-modal-title">
+      <div class="modal-header">
+        <h2 id="exam-modal-title" tabindex="-1">${edit ? "Prüfung ändern" : "Prüfung eintragen"}</h2>
+        <button type="button" class="modal-close" data-action="exam-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="exam-field">Grad
+          <select id="exam-kyu" aria-describedby="exam-error">
+            ${KYUS.map((k) => `<option value="${k}"${k === kyu ? " selected" : ""}>${k}. Kyu</option>`).join("")}
+          </select>
+        </label>
+        <label class="exam-field">Datum der Prüfung
+          <input type="date" id="exam-date" max="${todayStr()}" value="${esc(date)}" aria-describedby="exam-error" />
+        </label>
+        <label class="exam-field">Prüfer (optional)
+          <input type="text" id="exam-examiner" maxlength="${MAX_EXAM_EXAMINER}" autocapitalize="words" spellcheck="false"
+            placeholder="z.B. Sensei Meier" value="${esc(edit ? edit.examiner : "")}" />
+        </label>
+        <label class="exam-field">Notiz (optional)
+          <textarea id="exam-note" rows="3" maxlength="${MAX_EXAM_NOTE}" placeholder="z.B. Prüfungsort, Besonderheiten…">${esc(edit ? edit.note : "")}</textarea>
+        </label>
+        <p id="exam-error" class="sync-error" role="alert" hidden></p>
+      </div>
+      <div class="modal-footer">
+        ${edit ? '<button type="button" class="exam-btn danger" data-action="exam-delete">Löschen</button>' : "<span></span>"}
+        <div class="modal-footer-actions">
+          <button type="button" class="form-cancel" data-action="exam-close">Abbrechen</button>
+          <button type="button" class="exam-btn primary" data-action="exam-save">Speichern</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function isExamModalOpen() {
+  const overlay = document.getElementById("exam-modal-overlay");
+  return !!overlay && !overlay.hidden;
+}
+
+function openExamModal(id) {
+  if (profileBusy) return;
+  examDialogId = id && exams.some((p) => p.id === id) ? id : null;
+  const overlay = document.getElementById("exam-modal-overlay");
+  overlay.innerHTML = examModalHTML();
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  const first = document.getElementById("exam-kyu");
+  if (first) first.focus();
+}
+
+function closeExamModal() {
+  const overlay = document.getElementById("exam-modal-overlay");
+  if (!overlay || overlay.hidden) return;
+  overlay.hidden = true;
+  overlay.innerHTML = "";
+  examDialogId = null;
+  examDialogBusy = false;
+  document.body.style.overflow = "";
+  const back = document.querySelector('#exams-card [data-action="exam-add"]');
+  if (back) back.focus();
+}
+
+function setExamDialogError(msg) {
+  const el = document.getElementById("exam-error");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.hidden = !msg;
+}
+
+/* Speichern: erst prüfen (Grad, Datum, nicht in der Zukunft, nicht doppelt), dann übernehmen */
+async function submitExamDialog() {
+  if (examDialogBusy || !isExamModalOpen()) return false;
+  const kyu = Number((document.getElementById("exam-kyu") || {}).value);
+  const date = (document.getElementById("exam-date") || {}).value || "";
+  const examiner = (document.getElementById("exam-examiner") || {}).value || "";
+  const note = (document.getElementById("exam-note") || {}).value || "";
+  if (!KYUS.includes(kyu)) { setExamDialogError("Bitte einen Grad auswählen."); return false; }
+  if (!date || !parseIso(date)) { setExamDialogError("Bitte ein gültiges Datum eingeben."); return false; }
+  if (date > todayStr()) { setExamDialogError("Das Datum liegt in der Zukunft — eine Prüfung lässt sich erst nach dem Termin eintragen."); return false; }
+  const edit = exams.find((p) => p.id === examDialogId) || null;
+  if (exams.some((p) => p !== edit && p.kyu === kyu && p.date === date)) {
+    setExamDialogError("Diese Prüfung ist schon eingetragen (gleicher Grad am selben Tag).");
+    return false;
+  }
+  const rest = exams.filter((p) => p !== edit);
+  const checked = cleanExamEntry({
+    id: edit ? edit.id : newExamId(new Set(exams.map((p) => p.id))),
+    kyu, date, examiner, note: note.trim(),
+    createdAt: edit ? edit.createdAt : new Date().toISOString(),
+  }, new Set(rest.map((p) => p.id)));
+  if (!checked) { setExamDialogError("Diese Prüfung konnte nicht gespeichert werden."); return false; }
+  examDialogBusy = true;
+  const before = exams;
+  exams = rest.concat([checked.entry]).sort(compareExams);
+  const ok = await saveExams();
+  examDialogBusy = false;
+  if (!ok) { exams = before; renderAll(); return false; } // Speicher voll o.ä.: alter Stand bleibt, das Banner warnt
+  const geaendert = !!edit;
+  renderAll();
+  closeExamModal();
+  showToast(geaendert ? "Prüfung geändert." : "Prüfung eingetragen.");
+  return true;
+}
+
+async function deleteExam(id) {
+  const p = exams.find((x) => x.id === id);
+  if (!p || examDialogBusy) return false;
+  if (!confirm(`Prüfung „${p.kyu}. Kyu“ vom ${formatDate(p.date)} wirklich löschen?`)) return false;
+  examDialogBusy = true;
+  const before = exams;
+  exams = exams.filter((x) => x.id !== id);
+  const ok = await saveExams();
+  examDialogBusy = false;
+  if (!ok) { exams = before; renderAll(); return false; }
+  const warOffen = isExamModalOpen() && examDialogId === id;
+  renderAll();
+  if (warOffen) closeExamModal();
+  showToast("Prüfung gelöscht.");
+  return true;
+}
+
+function trapExamTab(e) {
+  const panel = document.querySelector("#exam-modal-overlay .exam-panel");
+  if (!panel) return;
+  const items = [...panel.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && el.getClientRects().length > 0);
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1], a = document.activeElement;
+  if (e.shiftKey && (a === first || !panel.contains(a) || a === document.getElementById("exam-modal-title"))) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && (a === last || !panel.contains(a))) { e.preventDefault(); first.focus(); }
 }
 
@@ -4214,12 +4656,15 @@ function techniqueRowHTML(t, opts) {
    11. RENDER: Übersicht/Dashboard
    ====================================================================== */
 function renderUebersicht() {
-  const focusKyu = KYUS.includes(examTarget.kyu) ? examTarget.kyu : activeKyu;
+  const gradeExam = currentGradeExam();
+  const kyuSince = effectiveKyuSince();
+  const nextGrade = nextExamGrade();
+  const focusKyu = KYUS.includes(examTarget.kyu) ? examTarget.kyu : nextGrade !== null ? nextGrade : activeKyu;
   const r = readiness(focusKyu);
   const neglect = neglectedList(focusKyu, 5);
   const countdown = examTarget.date ? daysUntilText(examTarget.date) : "Noch kein Termin gesetzt.";
   const neglectHeading = r.total > 0 && r.trained === r.total ? "Am längsten her" : "Braucht Aufmerksamkeit";
-  const eligibility = eligibilityStatus(examTarget.currentKyuSince, examTarget.minMonths);
+  const eligibility = eligibilityStatus(kyuSince, examTarget.minMonths);
 
   const content = document.getElementById("uebersicht-content");
   content.innerHTML = `
@@ -4242,20 +4687,23 @@ function renderUebersicht() {
           <input type="date" id="target-date-input" aria-label="Prüfungstermin" value="${esc(examTarget.date)}" />
         </div>
         <p class="target-countdown">${countdown}</p>
-        <details class="target-eligibility-details" ${(eligibility || examTarget.currentKyuSince || examTarget.minMonths) ? "open" : ""}>
+        ${nextGrade !== null && examTarget.kyu !== nextGrade ? `<p class="target-next-hint">Nächster Grad: ${nextGrade}. Kyu <button type="button" class="exam-btn small" data-action="target-next-kyu">Als Ziel übernehmen</button></p>` : ""}
+        <details class="target-eligibility-details" ${(eligibility || kyuSince || examTarget.minMonths) ? "open" : ""}>
           <summary>Mindest-Trainingszeit (optional)</summary>
           <div class="target-controls">
             <label class="form-label eligibility-field">Aktuelles Kyu seit
-              <input type="date" id="current-kyu-since-input" value="${esc(examTarget.currentKyuSince)}" />
+              <input type="date" id="current-kyu-since-input" value="${esc(kyuSince)}"${gradeExam ? " disabled" : ""} />
             </label>
             <label class="form-label eligibility-field">Mindestmonate
               <input type="number" id="min-months-input" min="0" max="60" step="1" placeholder="z.B. 6" value="${esc(examTarget.minMonths)}" />
             </label>
           </div>
+          ${gradeExam ? `<p class="kyu-since-note">Kommt aus deiner letzten Prüfung (${gradeExam.kyu}. Kyu am ${formatDate(gradeExam.date)}) — zum Ändern die Prüfung in der Karte „Prüfungen“ bearbeiten.</p>` : ""}
           ${eligibility ? `<p class="target-countdown eligibility-status ${eligibility.eligible ? "eligible" : ""}">${eligibility.text}</p>` : '<p class="eligibility-hint">Trag dein Datum + die von deinem Verband geforderten Mindestmonate ein, um zu sehen, ab wann du frühestens antreten darfst.</p>'}
         </details>
       </div>
     </div>
+    <div id="exams-card-slot">${examsCardHTML()}</div>
     <div class="dash-card">
       <h3 class="dash-card-title">Trainings-Rhythmus <span class="dash-card-sub">letzte 14 Wochen</span></h3>
       ${heatmapSVG(14)}
@@ -5436,6 +5884,13 @@ document.addEventListener("click", (e) => {
   if (e.target.closest('[data-action="sync-now"]')) syncNow("Knopf");
   if (e.target.closest('[data-action="sync-disconnect"]')) disconnectFromServer();
   if (e.target.closest('[data-action="open-session-modal"]')) openSessionModal();
+  const examRowBtn = e.target.closest('.exam-row [data-action]');
+  if (examRowBtn) {
+    const id = examRowBtn.closest(".exam-row").dataset.id;
+    if (examRowBtn.dataset.action === "exam-edit") openExamModal(id);
+    if (examRowBtn.dataset.action === "exam-delete") deleteExam(id);
+  } else if (e.target.closest('[data-action="exam-add"]')) openExamModal(null);
+  if (e.target.closest('[data-action="target-next-kyu"]')) adoptNextGradeAsTarget();
   if (e.target.closest('[data-action="export-data"]')) exportData();
   if (e.target.closest('[data-action="download-rescue"]')) downloadRescue();
   if (e.target.closest('[data-action="delete-rescue"]')) clearRescues();
@@ -5608,6 +6063,32 @@ syncOverlay.addEventListener("input", () => setSyncDialogError("")); // wer weit
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && isSyncModalOpen()) closeSyncModal();
+});
+
+/* ----- Prüfungs-Chronik: Ereignisse im Fenster ----- */
+const examOverlay = document.getElementById("exam-modal-overlay");
+
+examOverlay.addEventListener("click", (e) => {
+  if (e.target === examOverlay) { closeExamModal(); return; }
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  switch (el.dataset.action) {
+    case "exam-close": closeExamModal(); break;
+    case "exam-save": submitExamDialog(); break;
+    case "exam-delete": deleteExam(examDialogId); break;
+  }
+});
+
+examOverlay.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { trapExamTab(e); return; }
+  if (e.key !== "Enter" || e.isComposing) return;        // Enter in einem Feld speichert; in der Notiz macht es einen Absatz
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") { e.preventDefault(); submitExamDialog(); }
+});
+
+examOverlay.addEventListener("input", () => setExamDialogError(""));   // wer weitertippt, will die Meldung nicht mehr sehen
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && isExamModalOpen()) closeExamModal();
 });
 
 /* ----- Abgleich: wann von allein (siehe 6f) ----- */
