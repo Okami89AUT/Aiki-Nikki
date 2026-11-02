@@ -2,7 +2,7 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
-## ✅ Version 1.5.0 (02.11.2026)
+## ✅ Version 1.5.1 (02.11.2026)
 
 Mitgelieferte App auf v2.9 (Dauer, Kalender-Eintrag, Wochenziel); der Baustein selbst ist unverändert.
 
@@ -12,9 +12,11 @@ Mitgelieferte App auf v2.9 (Dauer, Kalender-Eintrag, Wochenziel); der Baustein s
 * **Die Dauer gehört zum Tag.** An die einzelne Technik gehängt, würde ein Abend mit fünf Techniken fünffach zählen. Ein Tag, eine Zahl – und der Import überschreibt eine schon eingetragene Dauer nie.
 * **Kalender statt Benachrichtigung.** Für die Erinnerung an den Prüfungstermin braucht es keinen Dienst und keine Berechtigung: eine .ics-Datei trägt der Kalender des Geräts selbst ein, Erinnerungen inklusive. Die Kennung hängt am Termin, damit kein zweiter Eintrag entsteht.
 
+* **Warum 1.5.1 und nicht 1.5.0.** Das Tag v1.5.0 war angelegt, bevor der Commit mit App 2.9 oben lag – es zeigte auf denselben Stand wie v1.4.0. Statt ein veröffentlichtes Tag umzuhängen, ist die Nummer eine Stelle weitergerückt; v1.5.0 bleibt als Fehlstart in der Liste.
+
 ### Prüfungen
 
-* Paket- und Serverprüfungen grün (89 bzw. 229); die Versions-Mutanten zeigen jetzt auf 1.5.0 bzw. App v2.9.
+* Paket- und Serverprüfungen grün (89 bzw. 229); die Versions-Mutanten zeigen jetzt auf 1.5.1 bzw. App v2.9.
 
 ## ✅ Version 1.4.0 (01.11.2026)
 

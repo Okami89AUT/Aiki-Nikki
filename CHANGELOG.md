@@ -3,7 +3,7 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
-## [1.5.0] – 2026-11-02
+## [1.5.1] – 2026-11-02
 
 Trainingsdauer, Kalender-Eintrag und Wochenziel (App v2.9).
 
