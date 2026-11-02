@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.6)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.9)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -342,6 +342,63 @@
      Repository, README und App; Prüfungs-Chronik (2.5) verknüpft mit dem Prüfungsziel.
      Gegenprobe zum Stand 2.6: s1 22, s2 59, s4 73, s5 28, c1 28, c2 46, c3 24, c4 18, c5 11 eingebaute Fehler — alle erkannt.
      s3 (162, Sync-Client) nicht erneut durchlaufen: Code und Prüfungen dort sind seit 2.4 unverändert.
+  ✅ Version 2.7a — Kopfbereich: eine Zeile statt drei Kacheln (01.11.2026): Über JEDEM Reiter standen drei Kennzahl-Kacheln
+     ("123 Trainingseinträge", "36 Techniken geübt", "155 Techniken im Programm") — auf dem Handy 138 px, weil sie umbrechen,
+     und der Inhalt begann erst bei 345 px. Jetzt eine Zeile: "123 Trainingseinträge · 36 von 155 Techniken geübt".
+     Kopf 210 statt 329 px, der Inhalt beginnt bei 226 px — gewonnen wird das auf jedem Reiter, nicht nur in der Übersicht.
+     Die Kennungen stat-sessions / stat-techniques / stat-total bleiben, damit alles Bestehende weiterzählt.
+     Test: 17 neue Prüfungen (own/c6-kopf.js: Zeile statt Kacheln, Zahlen stimmen und ziehen beim Erfassen nach, Personenwechsel,
+     320/768 px hell und dunkel) — zuerst rot, dann grün. Gegenprobe: 7 eingebaute Fehler, alle erkannt; ein achter Versuch war
+     untauglich (ein "hidden" am Element wirkt nicht, weil die eigene CSS-Regel display:flex gewinnt) und wurde durch zwei
+     treffende ersetzt. Nachgezogen: P11 misst die Kopfzeile jetzt an der Kennzahl-Zeile; die Scroll-Prüfung A5 verlangt nicht
+     mehr 200 px Scrollweg, sondern scrollt bis zum Anschlag — der Solar-Reiter kommt mit dem schlankeren Kopf nur noch auf
+     gut 150 px. Gesamte Regression: 29 Läufe grün.
+  ✅ Version 2.7b — Trainingsdauer, Teil 1: Daten und Abgleich (01.11.2026): Grundlage für "wie viele Stunden habe ich
+     trainiert". Die Dauer gehört zum TRAININGSTAG, nicht zur einzelnen Technik — sonst würde ein Abend mit fünf Techniken
+     fünfmal gezählt. Gespeichert wird deshalb { "2026-10-27": 90 } unter "aikido-session-minutes" je Person: Schlüssel muss
+     ein echter Kalendertag sein, Wert eine ganze Minutenzahl von 1 bis 600 (10 Stunden; darüber ist es ein Tippfehler).
+     Dazu minutesOn(Tag), trainingMinutesSince(Tage) und formatDuration ("1 h 30 min", "45 min", bei 0 nichts).
+     Backup: im Export enthalten, SCHEMA_VERSION steht auf 4; beim Import kommen nur Tage dazu, für die hier noch nichts
+     eingetragen ist (die eigene Angabe gilt). Abgleich: sechster Bereich, Regeln wie bei den anderen (je Tag getrennt,
+     bei Streit gewinnt die lokale Angabe); ein Fingerabdruck aus einer älteren Fassung bleibt gültig, die Dauer gilt dann
+     als "beim letzten Abgleich nicht vorhanden" und wird vereinigt.
+     Test: 21 neue Prüfungen (own/c7-dauer.js) und 13 im Abgleich (s2: Serverprüfung, lokaler Stand, Übernahme) — zuerst rot,
+     dann grün. Gegenprobe: 19 + 4 + 10 eingebaute Fehler, alle erkannt; einer blieb begründet stehen (defineProperty gegen
+     "__proto__" ist nicht beobachtbar, weil nur echte Kalendertage als Schlüssel durchkommen — die Absicherung bleibt).
+     Beim Schärfen fiel auf: minutesOn('constructor') hätte ohne Prüfung eine Funktion statt 0 geliefert.
+     Noch offen (2.7c): das Eingabefeld beim Erfassen und die Anzeige (Stunden pro Woche, Stunden seit der letzten Prüfung).
+  ✅ Version 2.7 — Trainingsdauer, Teil 2: Eingabe und Anzeige (01.11.2026): Im Fenster "Trainingstag erfassen" gibt es jetzt
+     "Dauer in Minuten (optional)" (1 bis 600). Ist für den gewählten Tag schon eine Dauer bekannt, steht sie im Feld — auch
+     beim Öffnen für heute und beim Umstellen des Datums. Leer lassen heißt "keine Angabe": eine schon eingetragene Dauer
+     wird dadurch NICHT gelöscht (0 Minuten sind kein Training). Kommazahlen werden auf ganze Minuten gerundet.
+     Angezeigt wird die Dauer dort, wo sie etwas erklärt: im Trainings-Rhythmus die Stunden dieser Woche, in der Karte
+     "Prüfungen" die Stunden seit der letzten Prüfung (der Prüfungstag selbst zählt nicht mit). Ohne Angaben steht dort
+     auch keine Stundenzahl — lieber nichts als ein falsches "0 h".
+     Test: 19 neue Prüfungen (own/c8-dauer-ui.js, U1 Eingabe, U2 Anzeige, U3 schmal/dunkel) — zuerst rot, dann grün.
+     Gegenprobe: 13 eingebaute Fehler; vier überlebten zuerst (leeres Feld durfte eine vorhandene Dauer überschreiben,
+     ungerundete Kommazahl, fehlende Vorbelegung für heute, Prüfungstag mitgezählt) — nach vier schärferen Prüfungen alle
+     erkannt. Gesamte Regression: 31 Läufe grün.
+  ✅ Version 2.8 — Prüfungstermin in den Kalender (.ics) (01.11.2026): In der Karte "Prüfungsziel" steht jetzt "Termin in den
+     Kalender". Der Knopf erscheint nur, wenn ein Termin gesetzt ist, und lädt eine .ics-Datei nach RFC 5545: ganztägiger
+     Termin am Prüfungstag (DTEND ist bewusst der Folgetag — so zeigen Kalender genau einen Tag statt zwei), Titel mit Grad,
+     dazu zwei Erinnerungen (eine Woche und einen Tag vorher). Auf dem iPhone bietet Safari die Datei direkt dem Kalender an.
+     Die Kennung (UID) hängt nur am Termin: zweimal heruntergeladen ergibt denselben Eintrag, ein neuer Termin einen neuen —
+     so entstehen im Kalender keine Dubletten. Zeilenenden CRLF, Sonderzeichen (Komma, Semikolon, Backslash, Umbruch)
+     geschützt, keine Zeile über 75 Zeichen.
+     Test: 16 neue Prüfungen (own/c9-ics.js: Aufbau der Datei, Datumsformate, Erinnerungen, Kennung, Escapen, Knopf und
+     Download) — zuerst rot, dann grün. Gegenprobe: 16 eingebaute Fehler, alle erkannt. Gesamte Regression: 32 Läufe grün.
+  ✅ Version 2.9 — Wochenziel (02.11.2026): Letzter Punkt der vereinbarten Liste. In der Karte "Trainings-Rhythmus" lässt sich
+     jetzt ein Ziel setzen ("3× pro Woche", 1 bis 7 oder keines); darunter steht der Stand der LAUFENDEN Woche
+     ("2 von 3 diese Woche" bzw. "Wochenziel erreicht (2 von 2)", dann grün). Gezählt werden Trainingstage ab Montag —
+     mehrere Techniken an einem Abend sind ein Tag, die Vorwoche zählt nicht mit.
+     Gespeichert wird je Person unter "aikido-weekly-goal" als { days: 1..7 }: im Backup, im Abgleich (siebter Bereich,
+     bei Streit gewinnt das eigene Ziel) und mit Rettungskopie bei unlesbaren Daten. Beim Import gilt: ein hier gesetztes
+     Ziel bleibt, ein fehlendes wird aus dem Backup übernommen. SCHEMA_VERSION steht jetzt auf 5.
+     Test: 27 Prüfungen für Daten/Backup/Abgleich (own/d1-wochenziel.js) und 19 für die Oberfläche (own/d2-wochenziel-ui.js)
+     — zuerst rot, dann grün. Gegenprobe: 27 + 10 eingebaute Fehler; drei überlebten zuerst (das Feld zeigte das gesetzte
+     Ziel nach dem Neuzeichnen nicht, ein unsinniger Wert im Arbeitsspeicher galt als Ziel, der lokale Stand kam ohne Ziel
+     aus) — nach drei schärferen Prüfungen alle erkannt. Gesamte Regression: 34 Läufe grün.
+     Hinweis: Mit Formatnummer 5 gleichen sich Geräte erst wieder ab, wenn auf allen diese Fassung läuft.
   ⏳ Nächste Schritte (vereinbarte Reihenfolge): Komponenten-Release 1.4.0 mit App 2.6 (Daniel legt den Tag an, wenn genug
      beisammen ist — er hält die Zahl der Tags bewusst klein) -> Trainingseinheit mit Dauer + Stunden seit letzter Prüfung
      -> .ics-Erinnerungen -> Wochenziel.
@@ -482,6 +539,13 @@
   .theme-toggle-icon { width: 18px; height: 18px; overflow: visible; }
   .theme-toggle-icon circle { fill: transparent; stroke: var(--c-ink); stroke-width: 1.6; }
   [data-theme="dark"] .theme-toggle-icon circle { fill: var(--c-ink); }
+  /* Kennzahlen im Kopf: eine Zeile statt drei Kacheln (2.7a) — sie stehen über jedem Reiter,
+     deshalb zählt hier jeder Pixel doppelt. */
+  .stats-line {
+    display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 12px 0 0;
+    font-size: 12.5px; color: var(--c-ink-muted-2); line-height: 1.5;
+  }
+  .stats-value { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--c-accent); }
   .stats-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   .stat-chip {
     background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px;
@@ -626,6 +690,8 @@
     font-family: inherit; color: var(--c-ink); background: var(--c-surface-alt);
   }
   .form-label textarea { resize: vertical; }
+  /* Zahlenfelder in Fenstern bleiben mit dem Daumen bedienbar (2.7c) */
+  #session-minutes-input { min-height: 40px; }
   .log-form-lastinfo {
     font-size: 12px; color: var(--c-ink-faint); margin: 0 0 2px; padding: 6px 9px;
     background: var(--c-surface-alt); border-radius: 6px;
@@ -853,6 +919,14 @@
   .rhythm-bar-fill { width: 100%; border-radius: 4px 4px 2px 2px; background: var(--c-accent); opacity: 0.55; }
   .rhythm-bar.current .rhythm-bar-fill { opacity: 1; }
   .rhythm-bar[data-days="0"] .rhythm-bar-fill { background: var(--c-border-dashed); opacity: 1; }
+  .rhythm-goal-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; }
+  .rhythm-goal-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--c-ink-muted); }
+  .rhythm-goal-label select {
+    min-height: 34px; padding: 4px 8px; font-family: inherit; font-size: 12.5px; color: var(--c-ink);
+    background: var(--c-surface-alt); border: 1px solid var(--c-border); border-radius: 8px;
+  }
+  .rhythm-goal { font-size: 12.5px; color: var(--c-ink-muted); margin: 0; }
+  .rhythm-goal.reached { color: var(--c-moss); font-weight: 500; }
   .rhythm-summary { font-size: 12.5px; color: var(--c-ink-muted); margin: 0; line-height: 1.5; }
   .dash-quick-stats { display: flex; gap: 10px; margin-bottom: 20px; }
   .dash-quick-stats .stat-chip { flex: 1; }
@@ -1033,6 +1107,7 @@
      ------------------------------------------------------------------ */
   .dash-exams-card { margin-bottom: 14px; }
   .exam-current { font-size: 12.5px; color: var(--c-ink-muted); margin: 0 0 10px; }
+  .target-ics { margin: 8px 0 0; }
   .target-next-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: var(--c-ink-muted); margin: 8px 0 0; }
   .kyu-since-note { font-size: 12px; color: var(--c-ink-muted); margin: 6px 0 0; line-height: 1.45; }
   .exam-list { display: flex; flex-direction: column; }
@@ -1249,11 +1324,10 @@
       <svg class="profile-chip-caret" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
     </button>
   </div>
-  <div class="stats-row">
-    <div class="stat-chip"><span class="stat-number" id="stat-sessions">0</span><span class="stat-label">Trainingseinträge</span></div>
-    <div class="stat-chip"><span class="stat-number" id="stat-techniques">0</span><span class="stat-label">Techniken geübt</span></div>
-    <div class="stat-chip"><span class="stat-number" id="stat-total">0</span><span class="stat-label">Techniken im Programm</span></div>
-  </div>
+  <p class="stats-line" id="stats-line">
+    <span class="stats-part"><span class="stats-value" id="stat-sessions">0</span> Trainingseinträge</span>
+    <span class="stats-part"><span class="stats-value" id="stat-techniques">0</span> von <span class="stats-value" id="stat-total">0</span> Techniken geübt</span>
+  </p>
 </header>
 
 <nav class="tabs">
@@ -1906,6 +1980,11 @@ const EXAMS_KEY = "aikido-exams";                   // Chronik der abgelegten Pr
 const MAX_EXAM_EXAMINER = 80;                       // Zeichen für "Prüfer/Dojo"
 const MAX_EXAM_NOTE = 400;                          // Zeichen für die Notiz
 
+const WEEKLY_GOAL_KEY = "aikido-weekly-goal";           // { days: 1..7 } — Trainingstage, die man sich pro Woche vornimmt
+const MAX_WEEKLY_GOAL = 7;
+const SESSION_MINUTES_KEY = "aikido-session-minutes";   // Dauer je Trainingstag in Minuten (je Person)
+const MAX_SESSION_MINUTES = 600;                        // 10 Stunden: darüber ist es kein Trainingstag mehr, sondern ein Tippfehler
+
 const RESCUE_KEY = "aikido-rescue"; // Kopien unlesbarer Originaldaten (siehe Abschnitt 6)
 
 /* Personen (siehe Abschnitt 6c): Liste unter PROFILES_KEY = { v, active, list: [{ id, name, createdAt }] }.
@@ -1919,12 +1998,12 @@ const DEFAULT_PROFILE_NAME = "Ich";
 const FALLBACK_PROFILE_NAME = "Person";
 const MAX_PROFILES = 12;
 const MAX_PROFILE_NAME = 40;                        // Zeichen (Unicode-Zeichen, nicht UTF-16-Einheiten)
-const PERSON_KEYS = [STORAGE_KEY, EXAM_TARGET_KEY, TECH_LINKS_KEY, TECH_THRESHOLDS_KEY, EXAMS_KEY];
+const PERSON_KEYS = [STORAGE_KEY, EXAM_TARGET_KEY, TECH_LINKS_KEY, TECH_THRESHOLDS_KEY, EXAMS_KEY, SESSION_MINUTES_KEY, WEEKLY_GOAL_KEY];
 
 const RECENT_DAYS = 14;
 
 /* Sicherung/Import: Dateiformat-Version und Grenzen */
-const SCHEMA_VERSION = 3;               // Format der Backup-Datei (wird bei Formatänderungen erhöht). 1: IDs mit Listenposition, 2: ohne, 3: mit Prüfungs-Chronik
+const SCHEMA_VERSION = 5;               // Format der Backup-Datei (wird bei Formatänderungen erhöht). 1: IDs mit Listenposition, 2: ohne, 3: mit Prüfungs-Chronik, 4: mit Dauer je Trainingstag, 5: mit Wochenziel
 const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_ENTRIES = 20000;        // der Verlauf listet alles auf einmal: mehr Einträge würden den Browser ausbremsen
 const MAX_URL_LENGTH = 2000;            // längere Adressen passen nicht mehr in einen QR-Code
@@ -1935,7 +2014,7 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.9";
 const APP_VERSION_DATE = "2026-11-01";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
@@ -1973,7 +2052,9 @@ let solarFamily = null;
 let solarDetailTechnik = null; // Name der Technik, deren Verlaufs-Detail gerade offen ist
 
 let techThresholds = {}; // techniqueId -> individuelles Wiederholungs-Ziel (Default: DEFAULT_THRESHOLD)
-let exams = [];          // Chronik der abgelegten Prüfungen der aktiven Person, neueste zuerst (Abschnitt 5b)
+let exams = [];
+let sessionMinutes = {};   // { "YYYY-MM-DD": Minuten } — die Dauer gehört zum Trainingstag, nicht zur einzelnen Technik
+let weeklyGoal = {};       // { days: 1..7 } oder {} = kein Ziel          // Chronik der abgelegten Prüfungen der aktiven Person, neueste zuerst (Abschnitt 5b)
 
 let sessionSelected = new Set(); // Technik-IDs für die Trainingstag-Schnellerfassung
 
@@ -2261,7 +2342,7 @@ async function persist(key, value) {
 const STORAGE_LABELS = { // Reihenfolge = Reihenfolge in Meldungen (Schlüssel einer Person: ohne "@Kennung", siehe baseKey)
   [PROFILES_KEY]: "Personen",
   [STORAGE_KEY]: "Trainingsverlauf", [TECH_LINKS_KEY]: "Links", [TECH_THRESHOLDS_KEY]: "Ziel-Wiederholungen", [EXAM_TARGET_KEY]: "Prüfungsziel",
-  [EXAMS_KEY]: "Prüfungen",
+  [EXAMS_KEY]: "Prüfungen", [SESSION_MINUTES_KEY]: "Trainingsdauer", [WEEKLY_GOAL_KEY]: "Wochenziel",
 };
 
 function rememberOriginal(key, raw) {
@@ -2352,6 +2433,33 @@ function cleanThresholdsStored(parsed) {
   return { value, lossy: Object.keys(value).length < Object.keys(parsed).length };
 }
 
+/* Dauer je Trainingstag: Schlüssel muss ein echter Kalendertag sein, Wert eine ganze Minutenzahl von 1 bis
+   MAX_SESSION_MINUTES. Alles andere fällt weg (und wird als Verlust gemeldet, damit die Rettungskopie bleibt). */
+function cleanSessionMinutesStored(parsed) {
+  if (!isPlainObject(parsed)) return null;
+  const value = {};
+  let kept = 0;
+  Object.keys(parsed).forEach((k) => {
+    const v = parsed[k];
+    if (typeof k !== "string" || !parseIso(k)) return;
+    if (!Number.isInteger(v) || v < 1 || v > MAX_SESSION_MINUTES) return;
+    Object.defineProperty(value, k, { value: v, enumerable: true, writable: true, configurable: true });
+    kept++;
+  });
+  return { value, lossy: kept < Object.keys(parsed).length };
+}
+
+/* Wochenziel: genau ein Feld "days" mit einer ganzen Zahl von 1 bis 7. Alles andere fällt weg. */
+function cleanWeeklyGoalStored(parsed) {
+  if (!isPlainObject(parsed)) return null;
+  const days = parsed.days;
+  const ok = Number.isInteger(days) && days >= 1 && days <= MAX_WEEKLY_GOAL;
+  const value = ok ? { days } : {};
+  const foreign = Object.keys(parsed).some((k) => k !== "days");
+  const dropped = !ok && parsed.days !== undefined;
+  return { value, lossy: foreign || dropped };
+}
+
 function cleanExamTargetStored(parsed) {
   if (!isPlainObject(parsed)) return null;
   const value = cleanExamTarget(parsed);
@@ -2427,6 +2535,53 @@ async function readExams(id) {
 
 async function saveExams() { return persist(EXAMS_KEY, JSON.stringify(exams)); }
 
+async function readSessionMinutes(id) {
+  const minutes = await loadChecked(SESSION_MINUTES_KEY, cleanSessionMinutesStored, id);
+  return minutes || {};
+}
+
+async function saveSessionMinutes() { return persist(SESSION_MINUTES_KEY, JSON.stringify(sessionMinutes)); }
+
+async function readWeeklyGoal(id) {
+  const goal = await loadChecked(WEEKLY_GOAL_KEY, cleanWeeklyGoalStored, id);
+  return goal || {};
+}
+
+async function saveWeeklyGoal() { return persist(WEEKLY_GOAL_KEY, JSON.stringify(weeklyGoal)); }
+
+function weeklyGoalDays() {
+  return Number.isInteger(weeklyGoal.days) && weeklyGoal.days >= 1 && weeklyGoal.days <= MAX_WEEKLY_GOAL ? weeklyGoal.days : 0;
+}
+
+/* Fortschritt der LAUFENDEN Woche (ab Montag): wie viele Trainingstage stehen schon, wie viele waren geplant */
+function weeklyGoalProgress() {
+  const ziel = weeklyGoalDays();
+  const wochen = weeklyTrainingDays(1);
+  const geschafft = wochen[wochen.length - 1].days;
+  return { ziel, geschafft, erfuellt: ziel > 0 && geschafft >= ziel };
+}
+
+/* ----- Rechnen mit der Dauer ----------------------------------------------------------------------------------- */
+function minutesOn(iso) {
+  const v = typeof iso === "string" && parseIso(iso) ? sessionMinutes[iso] : undefined;
+  return Number.isInteger(v) ? v : 0;
+}
+
+/* Summe der eingetragenen Minuten in den letzten (daysAgo+1) Tagen inkl. heute */
+function trainingMinutesSince(daysAgo) {
+  const from = addDaysIso(todayStr(), -daysAgo), today = todayStr();
+  return Object.keys(sessionMinutes).reduce((sum, iso) => (iso >= from && iso <= today ? sum + minutesOn(iso) : sum), 0);
+}
+
+/* "1 h 30 min", "45 min", "" (bei 0) */
+function formatDuration(minutes) {
+  const m = Number.isFinite(minutes) ? Math.round(minutes) : 0;
+  if (m <= 0) return "";
+  const h = Math.floor(m / 60), rest = m % 60;
+  if (!h) return `${rest} min`;
+  return rest ? `${h} h ${rest} min` : `${h} h`;
+}
+
 async function readLog(id) {
   const entries = await loadChecked(STORAGE_KEY, cleanLogList, id);
   return entries || [];
@@ -2501,8 +2656,8 @@ async function readTechThresholds(id) {
 
 /* Alle vier Bereiche einer Person lesen / als Stand der App übernehmen (die Übernahme geschieht ohne await) */
 async function readPersonData(id) {
-  const [entries, target, links, thresholds, examList, sync] = await Promise.all([readLog(id), readExamTarget(id), readTechLinks(id), readTechThresholds(id), readExams(id), readSyncState(id)]);
-  return { log: entries, examTarget: target, techLinks: links, techThresholds: thresholds, exams: examList, sync }; // sync: die Verbindung dieser Person (Abschnitt 6e)
+  const [entries, target, links, thresholds, examList, minutes, goal, sync] = await Promise.all([readLog(id), readExamTarget(id), readTechLinks(id), readTechThresholds(id), readExams(id), readSessionMinutes(id), readWeeklyGoal(id), readSyncState(id)]);
+  return { log: entries, examTarget: target, techLinks: links, techThresholds: thresholds, exams: examList, sessionMinutes: minutes, weeklyGoal: goal, sync }; // sync: die Verbindung dieser Person (Abschnitt 6e)
 }
 
 function applyPersonData(id, data) {
@@ -2512,6 +2667,8 @@ function applyPersonData(id, data) {
   techLinks = data.techLinks;
   techThresholds = data.techThresholds;
   exams = data.exams;
+  sessionMinutes = data.sessionMinutes;
+  weeklyGoal = data.weeklyGoal;
   syncState = data.sync.state;
   syncUnreadable = data.sync.unreadable;
   syncFailures = 0;
@@ -2531,6 +2688,73 @@ async function saveTechThresholds() { return persist(TECH_THRESHOLDS_KEY, JSON.s
    Vorhandene Daten werden nie überschrieben: der Import füllt nur Lücken.
    ====================================================================== */
 /* Lädt ein Objekt als JSON-Datei herunter. */
+/* ----- Kalender-Eintrag für den Prüfungstermin (2.8) ----------------------------------------------------------
+   Eine .ics-Datei nach RFC 5545: ganztägiger Termin am Prüfungstag (DTEND ist der Folgetag — so zeigen Kalender
+   genau einen Tag), dazu zwei Erinnerungen (eine Woche und einen Tag vorher). Zeilenenden sind CRLF, Sonderzeichen
+   werden geschützt, die Kennung (UID) hängt nur am Termin: derselbe Termin ergibt denselben Eintrag, ein neuer
+   Termin einen neuen — so entstehen im Kalender keine Dubletten. */
+function icsEscape(text) {
+  return String(text == null ? "" : text)
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+function icsStamp(date) {
+  return `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, "0")}${String(date.getUTCDate()).padStart(2, "0")}T${String(date.getUTCHours()).padStart(2, "0")}${String(date.getUTCMinutes()).padStart(2, "0")}${String(date.getUTCSeconds()).padStart(2, "0")}Z`;
+}
+
+function icsFileName() {
+  return `aikido-pruefung-${examTarget.date || todayStr()}.ics`;
+}
+
+function buildExamIcs() {
+  const date = examTarget.date;
+  if (!date || !parseIso(date)) return "";
+  const kyu = KYUS.includes(examTarget.kyu) ? `${examTarget.kyu}. Kyu` : "Kyu-Prüfung";
+  const tag = date.replace(/-/g, "");
+  const ende = addDaysIso(date, 1).replace(/-/g, "");
+  const uid = `aikido-${tag}-${KYUS.includes(examTarget.kyu) ? examTarget.kyu : "x"}@aikido-kyu-tracker`;
+  const alarm = (trigger, text) => ["BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:${trigger}`, `DESCRIPTION:${icsEscape(text)}`, "END:VALARM"];
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Aikido Kyu Tracker//DE",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART;VALUE=DATE:${tag}`,
+    `DTEND;VALUE=DATE:${ende}`,
+    `SUMMARY:${icsEscape(`Aikido-Prüfung ${kyu}`)}`,
+    `DESCRIPTION:${icsEscape("Eingetragen aus dem Aikido Kyu Tracker.")}`,
+    "TRANSP:TRANSPARENT",
+    ...alarm("-P7D", `Aikido-Prüfung ${kyu} in einer Woche`),
+    ...alarm("-P1D", `Aikido-Prüfung ${kyu} morgen`),
+    "END:VEVENT",
+    "END:VCALENDAR",
+    "",
+  ].join("\r\n");
+}
+
+function downloadExamIcs() {
+  const text = buildExamIcs();
+  if (!text) return false;
+  const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = icsFileName();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast("Kalender-Eintrag heruntergeladen.");
+  return true;
+}
+
 function saveJsonFile(payload, filename) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -2546,7 +2770,7 @@ function saveJsonFile(payload, filename) {
 function exportData() {
   saveJsonFile({
     app: "aikido-kyu-tracker", schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(),
-    log, techLinks, techThresholds, examTarget, exams,
+    log, techLinks, techThresholds, examTarget, exams, sessionMinutes, weeklyGoal,
   }, `aikido-training-backup-${todayStr()}.json`);
   showToast("Backup wird heruntergeladen.");
 }
@@ -2594,7 +2818,7 @@ function sanitizeLogEntry(raw) {
 function planImport(data) {
   const plan = {
     total: data.log.length, entries: [], duplicates: 0, invalid: 0, ignored: 0,
-    links: {}, thresholds: {}, target: {}, exams: [],
+    links: {}, thresholds: {}, target: {}, exams: [], minutes: {}, goal: {},
     newerVersion: Number(data.schemaVersion) > SCHEMA_VERSION,
   };
 
@@ -2627,6 +2851,26 @@ function planImport(data) {
       vorhanden.add(p.id);
       tage.add(`${p.kyu}|${p.date}`);
       plan.exams.push(p);
+    });
+  }
+
+  /* Wochenziel: nur übernehmen, wenn hier keines gesetzt ist (das eigene Ziel gilt). */
+  if (isPlainObject(data.weeklyGoal)) {
+    const sauber = cleanWeeklyGoalStored(deepCopy(data.weeklyGoal));
+    const value = sauber ? sauber.value : {};
+    if (value.days && !weeklyGoalDays()) plan.goal = value;
+    else if (value.days) plan.duplicates++;
+    else if (data.weeklyGoal.days !== undefined) plan.invalid++;
+  }
+
+  /* Dauer je Trainingstag: ein hier schon eingetragener Tag bleibt, wie er ist (die eigene Angabe gilt). */
+  if (isPlainObject(data.sessionMinutes)) {
+    const sauber = cleanSessionMinutesStored(deepCopy(data.sessionMinutes));
+    const value = sauber ? sauber.value : {};
+    plan.invalid += Object.keys(data.sessionMinutes).length - Object.keys(value).length;
+    Object.keys(value).forEach((iso) => {
+      if (minutesOn(iso)) { plan.duplicates++; return; }
+      plan.minutes[iso] = value[iso];
     });
   }
 
@@ -2667,7 +2911,7 @@ function planImport(data) {
 }
 
 function importCounts(plan) {
-  return { entries: plan.entries.length, links: Object.keys(plan.links).length, thresholds: Object.keys(plan.thresholds).length, target: Object.keys(plan.target).length, exams: plan.exams.length };
+  return { entries: plan.entries.length, links: Object.keys(plan.links).length, thresholds: Object.keys(plan.thresholds).length, target: Object.keys(plan.target).length, exams: plan.exams.length, minutes: Object.keys(plan.minutes).length, goal: plan.goal.days ? 1 : 0 };
 }
 
 /* "vom 12.10.2026" in LOKALER Zeit (exportedAt ist ein UTC-Zeitstempel) */
@@ -2685,6 +2929,8 @@ function importQuestion(plan, data, c) {
     `Übersprungen (ungültig): ${plan.invalid}`,
   ];
   if (c.exams) lines.push(`Neue Prüfungen: ${c.exams}`);
+  if (c.minutes) lines.push(`Neue Trainingsdauern: ${c.minutes}`);
+  if (c.goal) lines.push("Wochenziel wird übernommen");
   if (c.links) lines.push(`Neue Links: ${c.links}`);
   if (c.thresholds) lines.push(`Neue Ziel-Wiederholungen: ${c.thresholds}`);
   if (c.target) lines.push("Prüfungsziel: fehlende Angaben werden ergänzt");
@@ -2700,6 +2946,8 @@ function importSummary(plan, c) {
   if (plan.duplicates) parts.push(`${plan.duplicates} schon vorhanden`);
   if (plan.invalid) parts.push(`${plan.invalid} ungültig übersprungen`);
   if (c.exams) parts.push(plural(c.exams, "neue Prüfung", "neue Prüfungen"));
+  if (c.minutes) parts.push(plural(c.minutes, "neue Trainingsdauer", "neue Trainingsdauern"));
+  if (c.goal) parts.push("Wochenziel");
   if (c.links) parts.push(plural(c.links, "neuer Link", "neue Links"));
   if (c.thresholds) parts.push(plural(c.thresholds, "Ziel-Wiederholung", "Ziel-Wiederholungen"));
   if (c.target) parts.push("Prüfungsziel ergänzt");
@@ -2720,7 +2968,7 @@ async function applyImport(text) {
   const plan = planImport(data);
   const c = importCounts(plan);
   const summary = importSummary(plan, c);
-  if (!c.entries && !c.links && !c.thresholds && !c.target && !c.exams) {
+  if (!c.entries && !c.links && !c.thresholds && !c.target && !c.exams && !c.minutes && !c.goal) {
     showToast(`Nichts Neues im Backup${summary ? ": " + summary : ""}.`, 7000);
     return;
   }
@@ -2730,8 +2978,10 @@ async function applyImport(text) {
   Object.assign(techThresholds, plan.thresholds);
   Object.assign(examTarget, plan.target);
   exams = exams.concat(plan.exams).sort(compareExams);
+  Object.assign(sessionMinutes, plan.minutes);
+  if (plan.goal.days) weeklyGoal = { days: plan.goal.days };
   renderAll();
-  const saved = await Promise.all([saveLog(), saveTechLinks(), saveTechThresholds(), saveExamTarget(), saveExams()]);
+  const saved = await Promise.all([saveLog(), saveTechLinks(), saveTechThresholds(), saveExamTarget(), saveExams(), saveSessionMinutes(), saveWeeklyGoal()]);
   if (saved.every(Boolean)) showToast(`Import abgeschlossen: ${summary}.`, 7000);
 }
 
@@ -3218,7 +3468,7 @@ function stableStringify(value) {
 function docsEqual(a, b) { return stableStringify(a) === stableStringify(b); }
 
 function emptySyncDoc() {
-  return { schemaVersion: SCHEMA_VERSION, log: [], techLinks: {}, techThresholds: {}, examTarget: emptyExamTarget(), exams: [] };
+  return { schemaVersion: SCHEMA_VERSION, log: [], techLinks: {}, techThresholds: {}, examTarget: emptyExamTarget(), exams: [], sessionMinutes: {}, weeklyGoal: {} };
 }
 
 /* Reihenfolge im Verlauf: Datum absteigend, dann createdAt absteigend, dann ID aufsteigend */
@@ -3296,18 +3546,22 @@ function docMaps(doc) {
       .filter((f) => isPlainObject(doc) && isPlainObject(doc.examTarget) && doc.examTarget[f] != null && doc.examTarget[f] !== "")
       .map((f) => [f, doc.examTarget[f]])),
     exams: new Map((isPlainObject(doc) && Array.isArray(doc.exams) ? doc.exams : []).filter((p) => isPlainObject(p) && typeof p.id === "string").map((p) => [p.id, p])),
+    sessionMinutes: keyed("sessionMinutes"),
+    weeklyGoal: keyed("weeklyGoal"),
   };
 }
 
 /* Digest = Fingerabdruck je Schlüssel statt einer vollen Kopie des Stands (rund 7x weniger Platz). Genau das braucht der
    Drei-Wege-Abgleich von "base": ob sich ein Wert seit dem letzten Abgleich geändert hat. */
 const DIGEST_MARK = 1;
-const DIGEST_AREAS = ["log", "techLinks", "techThresholds", "examTarget", "exams"];
+const DIGEST_AREAS = ["log", "techLinks", "techThresholds", "examTarget", "exams", "sessionMinutes", "weeklyGoal"];
 /* "exams" darf fehlen: ein Digest, der vor 2.5b gespeichert wurde, bleibt gültig — die Chronik gilt dann als
    "beim letzten Abgleich nicht vorhanden", also wird sie beim ersten Abgleich danach vereinigt und nichts gelöscht. */
 function isDigest(x) {
   return isPlainObject(x) && x.d === DIGEST_MARK && isPlainObject(x.log) && isPlainObject(x.techLinks) && isPlainObject(x.techThresholds) && isPlainObject(x.examTarget)
-    && (x.exams === undefined || isPlainObject(x.exams));
+    && (x.exams === undefined || isPlainObject(x.exams))
+    && (x.sessionMinutes === undefined || isPlainObject(x.sessionMinutes))
+    && (x.weeklyGoal === undefined || isPlainObject(x.weeklyGoal));
 }
 
 function digestDoc(doc) {
@@ -3339,6 +3593,8 @@ function mergeDocs(base, local, remote) {
   const thresholdPart = mergeKeyed(baseHashes.techThresholds, L.techThresholds, R.techThresholds, preferLocalValue);
   const targetPart = mergeKeyed(baseHashes.examTarget, L.examTarget, R.examTarget, preferLocalValue);
   const examsPart = mergeKeyed(baseHashes.exams, L.exams, R.exams, preferLocalValue);
+  const minutesPart = mergeKeyed(baseHashes.sessionMinutes, L.sessionMinutes, R.sessionMinutes, preferLocalValue);
+  const goalPart = mergeKeyed(baseHashes.weeklyGoal, L.weeklyGoal, R.weeklyGoal, preferLocalValue);
   const examTargetResult = emptyExamTarget();
   targetPart.map.forEach((value, field) => { examTargetResult[field] = value; });
   return {
@@ -3349,8 +3605,10 @@ function mergeDocs(base, local, remote) {
       techThresholds: objectFromMap(thresholdPart.map),
       examTarget: examTargetResult,
       exams: [...examsPart.map.values()].sort(compareExams),
+      sessionMinutes: objectFromMap(minutesPart.map),
+      weeklyGoal: objectFromMap(goalPart.map),
     },
-    conflicts: logPart.conflicts + linkPart.conflicts + thresholdPart.conflicts + targetPart.conflicts + examsPart.conflicts,
+    conflicts: logPart.conflicts + linkPart.conflicts + thresholdPart.conflicts + targetPart.conflicts + examsPart.conflicts + minutesPart.conflicts + goalPart.conflicts,
   };
 }
 
@@ -3361,7 +3619,7 @@ function mergeDocs(base, local, remote) {
    unbrauchbar (null) — nie als "leer" lesen, sonst würde ein Abgleich den Server-Stand überschreiben.
    Ergebnis { doc, dropped, unsupported } oder null. unsupported: Stand aus neuerer App-Version oder mit unbekannten Teilen —
    so etwas darf diese Version nie zurückschreiben, sonst gingen die fremden Teile verloren. */
-const SYNC_DOC_KEYS = ["schemaVersion", "log", "techLinks", "techThresholds", "examTarget", "exams"];
+const SYNC_DOC_KEYS = ["schemaVersion", "log", "techLinks", "techThresholds", "examTarget", "exams", "sessionMinutes", "weeklyGoal"];
 const MAX_ENTRY_ID = 200;
 
 function syncEntryId(entry) {
@@ -3376,7 +3634,8 @@ function sanitizeSyncDoc(raw) {
   const examsRaw = raw.exams === undefined ? [] : raw.exams;
   const area = (v) => (v === undefined ? {} : isPlainObject(v) ? v : null);
   const linksRaw = area(raw.techLinks), thresholdsRaw = area(raw.techThresholds), targetRaw = area(raw.examTarget);
-  if (!Array.isArray(logRaw) || !Array.isArray(examsRaw) || !linksRaw || !thresholdsRaw || !targetRaw) return null;
+  const minutesRaw = area(raw.sessionMinutes), goalRaw = area(raw.weeklyGoal);
+  if (!Array.isArray(logRaw) || !Array.isArray(examsRaw) || !linksRaw || !thresholdsRaw || !targetRaw || !minutesRaw || !goalRaw) return null;
   let dropped = 0;
 
   const seen = new Set();
@@ -3411,6 +3670,10 @@ function sanitizeSyncDoc(raw) {
   dropped += Object.keys(linksRaw).length - Object.keys(links).length;
   const thresholds = cleanThresholdsStored(deepCopy(thresholdsRaw)).value;
   dropped += Object.keys(thresholdsRaw).length - Object.keys(thresholds).length;
+  const minutes = cleanSessionMinutesStored(deepCopy(minutesRaw)).value;
+  dropped += Object.keys(minutesRaw).length - Object.keys(minutes).length;
+  const goal = cleanWeeklyGoalStored(deepCopy(goalRaw)).value;
+  dropped += Object.keys(goalRaw).length - Object.keys(goal).length;
   const examTargetValue = cleanExamTarget(targetRaw);
   EXAM_TARGET_FIELDS.forEach((k) => {
     if (examTargetValue[k] === null && targetRaw[k] != null && targetRaw[k] !== "" && !(k === "minMonths" && targetRaw[k] === 0)) dropped++;
@@ -3420,7 +3683,7 @@ function sanitizeSyncDoc(raw) {
   const version = typeof raw.schemaVersion === "number" ? raw.schemaVersion : typeof raw.schemaVersion === "string" ? Number(raw.schemaVersion) : 0;
   const unsupported = version > SCHEMA_VERSION || Object.keys(raw).some((k) => !SYNC_DOC_KEYS.includes(k));
   return {
-    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: links, techThresholds: thresholds, examTarget: examTargetValue, exams: examList },
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: links, techThresholds: thresholds, examTarget: examTargetValue, exams: examList, sessionMinutes: minutes, weeklyGoal: goal },
     dropped,
     unsupported,
   };
@@ -3446,7 +3709,7 @@ function currentLocalDoc() {
   });
   entries.sort(compareLogEntries);
   return {
-    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: deepCopy(techLinks), techThresholds: deepCopy(techThresholds), examTarget: deepCopy(examTarget), exams: deepCopy(exams) },
+    doc: { schemaVersion: SCHEMA_VERSION, log: entries, techLinks: deepCopy(techLinks), techThresholds: deepCopy(techThresholds), examTarget: deepCopy(examTarget), exams: deepCopy(exams), sessionMinutes: deepCopy(sessionMinutes), weeklyGoal: deepCopy(weeklyGoal) },
     localOnly,
   };
 }
@@ -3461,6 +3724,8 @@ function applyMergedDoc(doc, localOnly) {
   if (!docsEqual(before.techThresholds, doc.techThresholds)) { techThresholds = deepCopy(doc.techThresholds); saves.push(saveTechThresholds()); }
   if (!docsEqual(before.examTarget, doc.examTarget)) { examTarget = deepCopy(doc.examTarget); saves.push(saveExamTarget()); }
   if (!docsEqual(before.exams, doc.exams)) { exams = deepCopy(doc.exams); saves.push(saveExams()); }
+  if (!docsEqual(before.sessionMinutes, doc.sessionMinutes)) { sessionMinutes = deepCopy(doc.sessionMinutes); saves.push(saveSessionMinutes()); }
+  if (!docsEqual(before.weeklyGoal, doc.weeklyGoal)) { weeklyGoal = deepCopy(doc.weeklyGoal); saves.push(saveWeeklyGoal()); }
   if (!saves.length) { syncApplying = false; return Promise.resolve(true); }
   renderAll();
   return Promise.all(saves).then((results) => { syncApplying = false; return results.every(Boolean); });
@@ -4062,7 +4327,7 @@ function syncCardHTML() {
         <h3 class="dash-card-title">Abgleich <span class="dash-card-sub">${connected ? esc(syncState.name) : "nicht verbunden"}</span></h3>
         <p class="sync-status${problem ? " error" : ""}" id="sync-status-text">${esc(syncStatusText())}</p>
         ${connected && syncNameBlocked ? `<p class="sync-status error">Der Name „${esc(syncState.name)}“ ist hier schon an eine andere Person vergeben — diese Person heißt deshalb weiterhin „${esc((profiles.find((p) => p.id === activeProfileId) || { name: "" }).name)}“. Bitte die andere Person umbenennen.</p>` : ""}
-        ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Prüfungen, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
+        ${connected ? "" : '<p class="backup-hint">Mit einem Abgleich bleiben Trainingsverlauf, Prüfungen, Dauer, Wochenziel, Links, Ziel-Wiederholungen und Prüfungsziel auf allen Geräten gleich. Ohne Abgleich ändert sich nichts.</p>'}
         <div class="sync-actions">${buttons}</div>
       </div>`;
 }
@@ -4295,13 +4560,17 @@ async function adoptNextGradeAsTarget() {
 
 function examsCardHTML() {
   const aktuell = currentGradeExam();
+  // Stunden seit der Prüfung: alles, was NACH dem Prüfungstag eingetragen wurde
+  const stundenSeitPruefung = aktuell
+    ? formatDuration(Object.keys(sessionMinutes).reduce((sum, iso) => (iso > aktuell.date ? sum + minutesOn(iso) : sum), 0))
+    : "";
   const list = exams.length
     ? exams.slice().sort(compareExams).map(examRowHTML).join("")   // die Karte sortiert selbst: neueste Prüfung zuerst
     : '<p class="empty-state">Noch keine Prüfung eingetragen.</p>';
   return `
       <div class="dash-card dash-exams-card" id="exams-card">
         <h3 class="dash-card-title">Prüfungen</h3>
-        ${aktuell ? `<p class="exam-current">Aktuell: ${aktuell.kyu}. Kyu seit ${formatDate(aktuell.date)}</p>` : ""}
+        ${aktuell ? `<p class="exam-current">Aktuell: ${aktuell.kyu}. Kyu seit ${formatDate(aktuell.date)}${stundenSeitPruefung ? ` · ${stundenSeitPruefung} trainiert` : ""}</p>` : ""}
         <div class="exam-list">${list}</div>
         <div class="exam-actions">
           <button type="button" class="exam-btn primary" data-action="exam-add">Prüfung eintragen</button>
@@ -4648,16 +4917,33 @@ function rhythmCardHTML(weeks = 8) {
             <div class="rhythm-bar-fill" style="height: ${w.days === 0 ? "3px" : hoehe + "%"}"></div>
           </div>`;
   }).join("");
+  const fortschritt = weeklyGoalProgress();
+  const ziel = fortschritt.ziel;
+  const zielText = !ziel
+    ? "Noch kein Ziel gesetzt."
+    : fortschritt.erfuellt
+      ? `Wochenziel erreicht (${fortschritt.geschafft} von ${ziel})`
+      : `${fortschritt.geschafft} von ${ziel} diese Woche`;
   const gesamt = wochen.reduce((sum, w) => sum + w.days, 0);
+  const stundenDieseWoche = formatDuration(Object.keys(sessionMinutes).reduce((sum, iso) => (iso >= wochen[weeks - 1].start ? sum + minutesOn(iso) : sum), 0));
   const schnitt = (gesamt / weeks).toFixed(1).replace(".", ",");
   const pause = longestBreakDays(weeks);
   const zusammenfassung = gesamt === 0
     ? `Noch kein Training in den letzten ${weeks} Wochen eingetragen.`
-    : `Schnitt ${schnitt} Trainingstage pro Woche · längste Pause ${pause} Tage`;
+    : `Schnitt ${schnitt} Trainingstage pro Woche · längste Pause ${pause} Tage${stundenDieseWoche ? ` · ${stundenDieseWoche} diese Woche` : ""}`;
   return `
     <div class="dash-card" id="rhythm-card">
       <h3 class="dash-card-title">Trainings-Rhythmus <span class="dash-card-sub">letzte ${weeks} Wochen</span></h3>
       <div class="rhythm-row">${bars}</div>
+      <div class="rhythm-goal-row">
+        <label class="rhythm-goal-label">Wochenziel
+          <select id="weekly-goal-select" aria-label="Trainingstage pro Woche">
+            <option value=""${ziel ? "" : " selected"}>kein Ziel</option>
+            ${[1, 2, 3, 4, 5, 6, 7].map((k) => `<option value="${k}"${ziel === k ? " selected" : ""}>${k}× pro Woche</option>`).join("")}
+          </select>
+        </label>
+        <p class="rhythm-goal${fortschritt.erfuellt ? " reached" : ""}">${esc(zielText)}</p>
+      </div>
       <p class="rhythm-summary">${esc(zusammenfassung)}</p>
     </div>`;
 }
@@ -4849,6 +5135,7 @@ function renderUebersicht() {
             <input type="date" id="target-date-input" aria-label="Prüfungstermin" value="${esc(examTarget.date)}" />
           </div>
           <p class="target-countdown">${countdown}</p>
+          ${examTarget.date && parseIso(examTarget.date) ? '<p class="target-ics"><button type="button" class="exam-btn small" data-action="exam-ics">Termin in den Kalender</button></p>' : ""}
           ${nextGrade !== null && examTarget.kyu !== nextGrade ? `<p class="target-next-hint">Nächster Grad: ${nextGrade}. Kyu <button type="button" class="exam-btn small" data-action="target-next-kyu">Als Ziel übernehmen</button></p>` : ""}
         </div>
       </div>
@@ -5282,6 +5569,10 @@ function openSessionModal() {
         <label class="form-label">Datum
           <input type="date" id="session-date-input" value="${todayStr()}" />
         </label>
+        <label class="form-label">Dauer in Minuten (optional)
+          <input type="number" id="session-minutes-input" min="1" max="${MAX_SESSION_MINUTES}" step="5" inputmode="numeric"
+            placeholder="z.B. 90" value="${minutesOn(todayStr()) || ""}" />
+        </label>
         <label class="form-label">Notiz für alle (optional)
           <textarea id="session-note-input" rows="2" placeholder="z.B. Schwerpunkt, Lehrer, allgemeine Anmerkung…"></textarea>
         </label>
@@ -5321,6 +5612,8 @@ async function saveSessionEntries() {
   if (saveBtn) saveBtn.disabled = true; // kein Doppelklick, solange gespeichert wird
   const date = document.getElementById("session-date-input").value || todayStr();
   const note = document.getElementById("session-note-input").value.trim();
+  const minutesRaw = Number((document.getElementById("session-minutes-input") || {}).value);
+  const minutes = Number.isFinite(minutesRaw) ? Math.round(minutesRaw) : 0;   // leer, Text oder außerhalb 1..600: keine Dauer
   let saved = 0;
   const skipped = [];
   [...sessionSelected].forEach((id) => {
@@ -5341,8 +5634,14 @@ async function saveSessionEntries() {
   });
   closeSessionModal();
   renderAll();
+  let minutesOk = true;
+  if (minutes >= 1 && minutes <= MAX_SESSION_MINUTES && minutesOn(date) !== minutes) {
+    sessionMinutes[date] = minutes;
+    minutesOk = await saveSessionMinutes();
+  }
   const ok = saved ? await saveLog() : true;
   if (!ok) return; // das Fehlerbanner erklärt es — kein "gespeichert", wenn nichts gespeichert wurde
+  if (!minutesOk) showError("Die Trainingsdauer konnte nicht gespeichert werden.");
   if (saved && skipped.length) showToast(`${saved} gespeichert, ${skipped.length} bereits vorhanden übersprungen.`);
   else if (!saved && skipped.length) showToast(`Alle ${skipped.length} waren für dieses Datum bereits erfasst — nichts Neues gespeichert.`);
   else if (saved) showToast(saved === 1 ? "1 Trainingseintrag gespeichert." : `${saved} Trainingseinträge gespeichert.`);
@@ -6042,6 +6341,15 @@ document.getElementById("solar-content").addEventListener("keydown", (e) => {
 document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 
 /* Bereich "Verwaltung": auf- und zugeklappt merken, damit er beim Neuzeichnen so bleibt */
+document.addEventListener("change", async (e) => {
+  if (!e.target || e.target.id !== "weekly-goal-select") return;
+  const days = Number(e.target.value);
+  const vorher = weeklyGoal;
+  weeklyGoal = Number.isInteger(days) && days >= 1 && days <= MAX_WEEKLY_GOAL ? { days } : {};
+  if (!(await saveWeeklyGoal())) weeklyGoal = vorher;   // Speicher voll o.ä.: alter Stand bleibt, das Banner warnt
+  renderUebersicht();
+});
+
 document.addEventListener("toggle", (e) => {
   if (e.target && e.target.id === "admin-section") adminSectionOpen = e.target.open;
   if (e.target && e.target.id === "eligibility-details") eligibilityOpen = e.target.open;
@@ -6062,6 +6370,7 @@ document.addEventListener("click", (e) => {
     if (examRowBtn.dataset.action === "exam-delete") deleteExam(id);
   } else if (e.target.closest('[data-action="exam-add"]')) openExamModal(null);
   if (e.target.closest('[data-action="toggle-neglect"]')) { neglectExpanded = !neglectExpanded; renderUebersicht(); }
+  if (e.target.closest('[data-action="exam-ics"]')) downloadExamIcs();
   if (e.target.closest('[data-action="target-next-kyu"]')) adoptNextGradeAsTarget();
   if (e.target.closest('[data-action="export-data"]')) exportData();
   if (e.target.closest('[data-action="download-rescue"]')) downloadRescue();
@@ -6096,6 +6405,10 @@ document.getElementById("session-modal-overlay").addEventListener("click", (e) =
 });
 
 document.getElementById("session-modal-overlay").addEventListener("change", (e) => {
+  if (e.target.id === "session-date-input") {   // für diesen Tag schon eine Dauer bekannt? Dann anbieten.
+    const feld = document.getElementById("session-minutes-input");
+    if (feld) feld.value = minutesOn(e.target.value) || "";
+  }
   if (e.target.matches('.session-tech-item input[type="checkbox"]')) {
     if (e.target.checked) sessionSelected.add(e.target.dataset.id);
     else sessionSelected.delete(e.target.dataset.id);

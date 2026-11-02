@@ -2,6 +2,20 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.5.0 (02.11.2026)
+
+Mitgelieferte App auf v2.9 (Dauer, Kalender-Eintrag, Wochenziel); der Baustein selbst ist unverändert.
+
+### Entscheidungen
+
+* **Zwei neue Bereiche in einem Zug.** `sessionMinutes` (Dauer je Trainingstag) und `weeklyGoal` kamen beide vor dem Release dazu, deshalb kostet das nur EINE Erhöhung der Formatnummer (3 → 5 inklusive der Chronik aus 1.4.0) statt zweier Abgleich-Pausen hintereinander.
+* **Die Dauer gehört zum Tag.** An die einzelne Technik gehängt, würde ein Abend mit fünf Techniken fünffach zählen. Ein Tag, eine Zahl – und der Import überschreibt eine schon eingetragene Dauer nie.
+* **Kalender statt Benachrichtigung.** Für die Erinnerung an den Prüfungstermin braucht es keinen Dienst und keine Berechtigung: eine .ics-Datei trägt der Kalender des Geräts selbst ein, Erinnerungen inklusive. Die Kennung hängt am Termin, damit kein zweiter Eintrag entsteht.
+
+### Prüfungen
+
+* Paket- und Serverprüfungen grün (89 bzw. 229); die Versions-Mutanten zeigen jetzt auf 1.5.0 bzw. App v2.9.
+
 ## ✅ Version 1.4.0 (01.11.2026)
 
 Mitgelieferte App auf v2.6 (Prüfungs-Chronik, aufgeräumte Übersicht), dazu die MIT-Lizenz; der Baustein selbst ist unverändert.

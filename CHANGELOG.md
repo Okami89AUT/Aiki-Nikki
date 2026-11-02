@@ -3,6 +3,21 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.5.0] – 2026-11-02
+
+Trainingsdauer, Kalender-Eintrag und Wochenziel (App v2.9).
+
+### Geändert
+- Mitgelieferte App von v2.6 auf v2.9:
+  - **Trainingsdauer** (v2.7): beim Erfassen optional „Dauer in Minuten“; die Dauer gehört zum Trainingstag, nicht zur einzelnen Technik. Angezeigt werden die Stunden dieser Woche und die Stunden seit der letzten Prüfung.
+  - **Prüfungstermin als Kalender-Eintrag** (v2.8): „Termin in den Kalender“ lädt eine .ics-Datei mit zwei Erinnerungen (eine Woche und einen Tag vorher).
+  - **Wochenziel** (v2.9): „3× pro Woche“ setzen, der Stand der laufenden Woche steht in der Karte „Trainings-Rhythmus“.
+  - Kleinigkeiten: die Kennzahlen im Kopf sind eine Zeile statt drei Kacheln, gezählt werden überall Trainingstage statt Einträge.
+- Am Baustein selbst ändert sich wieder nichts: Er speichert den Datenstand einer Person als Ganzes – die Schnittstelle bleibt unverändert (`api: 1`).
+
+### Hinweis
+- Der abgeglichene Datenstand hat jetzt `schemaVersion: 5` (neue Bereiche `sessionMinutes` und `weeklyGoal`). Geräte mit einer älteren App gleichen nicht mehr ab, bis sie ebenfalls auf v2.9 sind – **alle Geräte aktualisieren**. Der auf dem Server gespeicherte Stand bleibt dabei unangetastet.
+
 ## [1.4.0] – 2026-11-01
 
 Prüfungs-Chronik, aufgeräumte Übersicht und MIT-Lizenz (App v2.6).
