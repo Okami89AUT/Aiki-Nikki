@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.9)
+  AIKIDO KYU TRACKER — Build-Log (aktuelle Version: 2.10)
   ✅ Schritt 1: Speicher-Fundament (window.storage + localStorage-Fallback) &
      Theme-System (Hell "Washi" / Dunkel "Sumi-e") mit Umschalter im Header
   ✅ Schritt 2: Übersicht/Dashboard-Tab (Bereitschaftsring pro Kyu, Trainings-Heatmap,
@@ -405,6 +405,22 @@
      Später/optional: B Handy/Barrierefreiheit, C Bedienung, D Datenmodell, Web-App/Veröffentlichen (Schriften selbst einbetten,
      Impressum/Datenschutz), NAS. Offen aus dem Betrieb: schwacher Einladungscode am Home Assistant ersetzen; eigene
      Verwaltungs-Oberfläche im Baustein statt der Hilfs-Helfer im Dashboard.
+  ✅ Version 2.10 — Zugang löschen mit Bedenkzeit (20.11.2026): In der Abgleich-Karte steht jetzt "Zugang löschen". Das Fenster
+     erklärt, was gelöscht wird (der Zugang auf dem Server samt dortigem Stand — die Daten auf DIESEM Gerät bleiben), und
+     stellt eine Rechenaufgabe ("7 + 5 = ?"). Die ist kein Schutz gegen Fremde — wer Name und Code hat, rechnet auch —,
+     sondern gegen das Verklicken. Der eigentliche Schutz ist die Frist: der Server (Baustein 1.6.0) löscht erst nach
+     24 Stunden. Solange steht ganz oben ein Band mit Termin, verbleibender Zeit ("noch 23 Stunden") und "Löschung
+     abbrechen"; der Löschen-Knopf verschwindet so lange. Der Termin gehört zum gespeicherten Zustand der Verbindung
+     (übersteht Neuladen) und kommt bei JEDEM Abgleich frisch vom Server mit — wird die Löschung auf einem anderen Gerät
+     ausgelöst oder abgebrochen, zieht das Band hier nach.
+     Test: 23 Prüfungen für Knopf/Fenster/Rechenaufgabe (own/e1-loeschen.js) und 26 für Band, Countdown und Abbruch
+     (own/e2-band.js) — zuerst rot, dann grün. Dabei kam ein echter Fehler heraus: JavaScript rechnet einen unmöglichen
+     Tag still weiter ("2026-02-30" wird zum 2. März), deshalb prüft cleanDeleteAt den Termin jetzt per Rückprobe über
+     toISOString. Gegenprobe: 20 eingebaute Fehler, alle erkannt; zwei weitere waren ungültig (die Prüfziffer bzw. die
+     Rückprobe fangen den Fall schon ab) und wurden ersetzt bzw. gestrichen.
+     ACHTUNG Prüfstand: Die 34 Prüfreihen der Fassungen bis 2.9 sind verloren gegangen (Arbeitsbereich der Sitzung wurde
+     ersetzt). Neu aufgebaut sind qa/lib.js (Browser + nachgebauter Server + feste, weiterstellbare Uhr) und die beiden
+     Reihen oben; eine vollständige Regression über die ganze App gibt es derzeit NICHT.
   Alle Original-Techniken/-Daten unverändert. Bei Fortsetzung in neuem Chat:
   diese Datei hochladen, "weiter mit Schritt X" sagen.
 -->
@@ -601,6 +617,19 @@
     color: var(--c-error-text); border-radius: 8px; font-size: 13px; line-height: 1.45; box-shadow: var(--shadow-raised);
   }
   #error-banner[hidden] { display: none; }
+  /* Hinweisband: für diesen Server-Zugang läuft eine Löschung (24 Stunden Bedenkzeit). Es steht bewusst ganz oben und
+     nicht in der Abgleich-Karte: wer es übersieht, verliert den Zugang. Gleiche Bauweise wie das Fehlerbanner. */
+  #sync-delete-band {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    margin: 12px 20px 0; padding: 8px 8px 8px 14px; background: var(--c-error-bg); border: 1px solid var(--c-error-border);
+    color: var(--c-error-text); border-radius: 8px; font-size: 13px; line-height: 1.45; box-shadow: var(--shadow-raised);
+  }
+  .delete-band-text { flex: 1 1 200px; min-width: 0; }
+  .delete-band-btn {
+    font: inherit; font-weight: 500; color: var(--c-error-text); background: transparent; cursor: pointer;
+    border: 1px solid currentColor; border-radius: 6px; padding: 6px 12px; min-height: 36px; margin-left: auto;
+  }
+  .sync-btn.danger { color: var(--c-error-text); border-color: var(--c-error-border); background: var(--c-error-bg); }
   .error-banner-text { flex: 1 1 220px; min-width: 0; }
   .error-banner-btn {
     font: inherit; font-weight: 500; color: var(--c-error-text); background: transparent; cursor: pointer;
@@ -1360,6 +1389,8 @@
   <button type="button" class="error-banner-close" id="error-banner-close" aria-label="Meldung schließen">✕</button>
 </div>
 
+<div id="sync-delete-band-slot"></div>
+
 <main>
   <section id="tab-uebersicht">
     <div id="uebersicht-content"><p class="loading-hint">Lade Trainingsdaten…</p></div>
@@ -1396,6 +1427,7 @@
 <div id="terms-modal-overlay" class="modal-overlay" hidden></div>
 <div id="profile-modal-overlay" class="modal-overlay" hidden></div>
 <div id="sync-modal-overlay" class="modal-overlay" hidden></div>
+<div id="sync-delete-overlay" class="modal-overlay" hidden></div>
 <div id="exam-modal-overlay" class="modal-overlay" hidden></div>
 
 <script>
@@ -2014,8 +2046,8 @@ const MAX_RESCUE_CHARS = 1500000;       // Obergrenze für alle Kopien zusammen 
 
 /* Version der App (steht unten im Dashboard). Bei JEDER ausgelieferten Änderung hochzählen, Datum anpassen und im
    Build-Log ganz oben eintragen. Hauptzahl = größerer Umbau/Datenformat, Nachkommazahl = Paket bzw. Schritt. */
-const APP_VERSION = "2.9";
-const APP_VERSION_DATE = "2026-11-01";  // Stand: Kalendertag der Auslieferung
+const APP_VERSION = "2.10";
+const APP_VERSION_DATE = "2026-11-20";  // Stand: Kalendertag der Auslieferung
 
 /* ======================================================================
    3. ANWENDUNGS-STATUS
@@ -3786,7 +3818,7 @@ function cleanSyncState(parsed) {
   if (typeof code !== "string" || [...code].length < SYNC_CODE_MIN || [...code].length > SYNC_CODE_MAX) return null;
   const progress = isDigest(parsed.base) && Number.isInteger(parsed.rev) && parsed.rev >= 0;
   return {
-    v: SYNC_STATE_VERSION, name, code,
+    v: SYNC_STATE_VERSION, name, code, deleteAt: cleanDeleteAt(parsed.deleteAt),
     rev: progress ? parsed.rev : null,
     base: progress ? deepCopy(parsed.base) : null,
     at: typeof parsed.at === "string" && parsed.at.length <= 40 ? parsed.at : null,
@@ -3810,7 +3842,7 @@ function setSyncStatus(patch) {
   syncStatusChanged();
 }
 
-function syncStatusChanged() { renderSyncCard(); }
+function syncStatusChanged() { renderSyncCard(); renderDeleteBand(); }
 
 /* ----- Meldungen (deutsch) ---------------------------------------------------------------------------------------------- */
 function syncErrorText(code, extra) {
@@ -3940,7 +3972,7 @@ async function syncConnect(input) {
     const usedAfter = serverName === name ? null : await syncUsedBy(serverName, pid); // der Server kennt den Namen eventuell in anderer Schreibweise
     if (usedAfter) return syncFail("already_used", { person: usedAfter });
     const fresh = create === true; // frisch angelegt: der Server-Stand ist leer, rev 0
-    const state = { v: SYNC_STATE_VERSION, name: serverName, code, rev: fresh ? 0 : null, base: fresh ? digestDoc(null) : null, at: null, rejected: false };
+    const state = { v: SYNC_STATE_VERSION, name: serverName, code, rev: fresh ? 0 : null, base: fresh ? digestDoc(null) : null, at: null, rejected: false, deleteAt: cleanDeleteAt(r.data.deleteAt) };
     if (!(await saveSyncState(pid, state))) return syncFail("local_storage");
     if (activeProfileId === pid && !profileBusy) {
       syncState = state;
@@ -3967,7 +3999,7 @@ async function syncReconnect(input) {
     const r = await syncRequest("login", { name: state.name, code });
     if (!r.ok) return syncFail(r.code, r);
     if (activeProfileId !== pid || syncState !== state || profileBusy) return syncFail("person_changed");
-    const next = Object.assign({}, state, { code, rejected: false });
+    const next = Object.assign({}, state, { code, rejected: false, deleteAt: cleanDeleteAt(r.data.deleteAt) });
     if (!(await saveSyncState(pid, next))) return syncFail("local_storage");
     if (activeProfileId === pid && syncState === state) {
       syncState = next;
@@ -4069,6 +4101,7 @@ async function syncOnce() {
     const pull = await syncRequest("pull", known ? { name: state.name, code: state.code, sinceRev: state.rev } : { name: state.name, code: state.code });
     if (!mine()) return lost();
     if (!pull.ok) return fail(pull.code, pull);
+    await noteServerDeleteAt(pid, state, pull.data);
     const remoteRev = pull.data.rev;
     const unchanged = pull.data.unchanged === true;
     if (!Number.isInteger(remoteRev) || remoteRev < 0 || (unchanged && !(known && remoteRev === state.rev))) return fail("bad_response");
@@ -4117,6 +4150,7 @@ async function syncOnce() {
     const push = await syncRequest("push", { name: state.name, code: state.code, baseRev: pushBase, data: merged });
     if (!mine()) return lost();
     if (push.ok) {
+      await noteServerDeleteAt(pid, state, push.data);
       const newRev = push.data.rev;
       if (!Number.isInteger(newRev) || newRev < 0) return fail("bad_response");
       state.rev = newRev;
@@ -4320,7 +4354,8 @@ function syncCardHTML() {
   const buttons = connected
     ? `<button type="button" class="sync-btn primary" data-action="sync-now"${running || rejected ? " disabled" : ""}>Jetzt abgleichen</button>
         ${rejected ? '<button type="button" class="sync-btn" data-action="sync-reconnect">Neu anmelden</button>' : ""}
-        <button type="button" class="sync-btn" data-action="sync-disconnect">Trennen</button>`
+        <button type="button" class="sync-btn" data-action="sync-disconnect">Trennen</button>
+        ${syncState.deleteAt ? "" : '<button type="button" class="sync-btn danger" data-action="sync-delete">Zugang löschen</button>'}`
     : '<button type="button" class="sync-btn primary" data-action="sync-open">Verbinden</button>';
   return `
       <div class="dash-card dash-sync-card" id="sync-card">
@@ -4394,6 +4429,197 @@ function syncModalHTML() {
         </div>
       </div>
     </div>`;
+}
+
+/* ----- Zugang löschen: 24 Stunden Bedenkzeit ------------------------------------------------------------------------
+   Der Server löscht nicht sofort, sondern merkt die Löschung vor und führt sie erst nach 24 Stunden aus
+   (docs/SCHNITTSTELLE.md: delete / delete-cancel). Bis dahin läuft alles normal weiter, und oben steht ein Band mit dem
+   Termin und "Löschung abbrechen" — denn eine Frist nützt nur, wenn sie auffällt.
+   Die Rechenaufgabe im Fenster ist KEIN Schutz gegen Fremde (wer Name und Code hat, rechnet auch 7 + 5), sondern gegen
+   das Verklicken: sie erzwingt eine zweite, bewusste Handlung.
+   Der Termin gehört zum gespeicherten Zustand der Verbindung: er übersteht das Neuladen, und er kommt bei jedem
+   Abgleich frisch vom Server mit — so verschwindet das Band auch dann, wenn die Löschung auf einem anderen Gerät
+   abgebrochen wurde. ------------------------------------------------------------------------------------------------ */
+let currentDeleteChallenge = { a: 0, b: 0, text: "", answer: 0 };
+let syncDeleteBusy = false;
+
+/* Nur ein Zeitpunkt in genau der Schreibweise des Servers zählt; alles andere heißt "keine Löschung".
+   Die Rückprobe über toISOString ist nötig, weil JavaScript einen unmöglichen Tag stillschweigend weiterrechnet
+   ("2026-02-30" wird zum 2. März) — ein solcher Termin wäre falsch angezeigt. */
+function cleanDeleteAt(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value)) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().replace(/\.\d{3}Z$/, "Z") === value ? value : null;
+}
+
+function newDeleteChallenge() {
+  const a = 2 + Math.floor(Math.random() * 8);
+  const b = 2 + Math.floor(Math.random() * 8);
+  return { a, b, text: `${a} + ${b} = ?`, answer: a + b };
+}
+
+/* Verbleibende Zeit in Worten. Unter einer Minute wird nicht mehr heruntergezählt ("jeden Moment"): auf die Sekunde
+   genau ist der Termin ohnehin nicht, der Server räumt stündlich auf. */
+function deleteCountdownText(ms) {
+  if (!(ms >= 60000)) return "jeden Moment";
+  const minuten = Math.floor(ms / 60000);
+  if (minuten < 60) return `noch ${minuten} ${minuten === 1 ? "Minute" : "Minuten"}`;
+  const stunden = Math.floor(minuten / 60);
+  return `noch ${stunden} ${stunden === 1 ? "Stunde" : "Stunden"}`;
+}
+
+/* Termin merken (oder löschen) und überall anzeigen. Gespeichert wird zuerst — sonst zeigt die App einen Stand, der
+   ein Neuladen nicht übersteht. */
+async function setSyncDeleteAt(pid, value) {
+  if (!syncState || activeProfileId !== pid) return false;
+  const next = Object.assign({}, syncState, { deleteAt: cleanDeleteAt(value) });
+  if (!(await saveSyncState(pid, next))) return false;
+  if (activeProfileId !== pid) return false;
+  syncState = next;
+  renderDeleteBand();
+  renderSyncCard();
+  return true;
+}
+
+/* Jede Antwort des Servers trägt den Termin mit, solange eine Löschung vorgemerkt ist. Fehlt er, wurde sie abgebrochen
+   (vielleicht auf einem anderen Gerät) — dann verschwindet er auch hier. */
+async function noteServerDeleteAt(pid, state, data) {
+  if (!isPlainObject(data) || !syncState || syncState !== state || activeProfileId !== pid) return;
+  const wert = cleanDeleteAt(data.deleteAt);
+  if ((syncState.deleteAt || null) === wert) return;
+  await setSyncDeleteAt(pid, wert);
+}
+
+async function syncRequestDelete() {
+  if (!syncState) return syncFail("not_connected");
+  const pid = activeProfileId, state = syncState;
+  const r = await syncRequest("delete", { name: state.name, code: state.code, confirm: true });
+  if (!r.ok) return syncFail(r.code, r);
+  if (activeProfileId !== pid || syncState !== state) return syncFail("person_changed");
+  const when = cleanDeleteAt(r.data.deleteAt);
+  if (!when) return syncFail("bad_response");
+  if (!(await setSyncDeleteAt(pid, when))) return syncFail("local_storage");
+  return { ok: true, deleteAt: when };
+}
+
+async function syncCancelDelete() {
+  if (!syncState || !syncState.deleteAt) return syncFail("not_connected");
+  const pid = activeProfileId, state = syncState;
+  const r = await syncRequest("delete-cancel", { name: state.name, code: state.code });
+  if (!r.ok) return syncFail(r.code, r);
+  if (activeProfileId !== pid || syncState !== state) return syncFail("person_changed");
+  if (!(await setSyncDeleteAt(pid, null))) return syncFail("local_storage");
+  return { ok: true };
+}
+
+/* ----- Das Band ----------------------------------------------------------------------------------------------------- */
+function syncDeleteBandHTML() {
+  if (!syncState || !syncState.deleteAt) return "";
+  const rest = new Date(syncState.deleteAt).getTime() - Date.now();
+  return `
+    <div id="sync-delete-band" role="alert">
+      <span class="delete-band-text">Dieser Zugang („${esc(syncState.name)}“) wird am ${esc(formatTimestamp(syncState.deleteAt))} Uhr auf dem Server gelöscht — ${esc(deleteCountdownText(rest))}. Die Daten auf diesem Gerät bleiben.</span>
+      <button type="button" class="delete-band-btn" data-action="sync-delete-cancel">Löschung abbrechen</button>
+    </div>`;
+}
+
+function renderDeleteBand() {
+  const slot = document.getElementById("sync-delete-band-slot");
+  if (slot) slot.innerHTML = syncDeleteBandHTML();
+}
+
+async function cancelDeleteFromBand() {
+  if (syncDeleteBusy) return;
+  syncDeleteBusy = true;
+  let r;
+  try { r = await syncCancelDelete(); } finally { syncDeleteBusy = false; }
+  showToast(r.ok ? "Löschung abgebrochen — der Zugang bleibt." : r.message);
+}
+
+/* ----- Das Fenster -------------------------------------------------------------------------------------------------- */
+function syncDeleteModalHTML() {
+  return `
+    <div class="modal-panel sync-panel" role="dialog" aria-modal="true" aria-labelledby="sync-delete-title">
+      <div class="modal-header">
+        <h2 id="sync-delete-title" tabindex="-1">Zugang löschen</h2>
+        <button type="button" class="modal-close" data-action="sync-delete-close" aria-label="Schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="sync-dialog-hint">Gelöscht wird der Zugang „${esc(syncState ? syncState.name : "")}“ auf dem Server samt dem Stand, der dort liegt.
+          <strong>Es passiert nicht sofort:</strong> der Server führt die Löschung erst in 24 Stunden aus. Bis dahin bleibt alles nutzbar,
+          und oben steht ein Hinweis, über den du sie jederzeit abbrechen kannst.</p>
+        <p class="sync-field-note">Die Daten auf diesem Gerät bleiben erhalten. Andere Geräte gleichen nach der Löschung nicht mehr ab.</p>
+        <label class="sync-field">Sicherheitsfrage: <span id="sync-delete-task">${esc(currentDeleteChallenge.text)}</span>
+          <input type="text" inputmode="numeric" id="sync-delete-answer" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="sync-delete-error" />
+        </label>
+        <p id="sync-delete-error" class="sync-error" role="alert" hidden></p>
+        <div class="sync-submit-row">
+          <button type="button" class="sync-btn" data-action="sync-delete-close">Abbrechen</button>
+          <button type="button" class="sync-btn danger" data-action="sync-delete-submit">Löschung vormerken</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function isSyncDeleteModalOpen() {
+  const overlay = document.getElementById("sync-delete-overlay");
+  return !!overlay && !overlay.hidden;
+}
+
+function openSyncDeleteModal() {
+  if (!syncState || !syncServer.available || syncState.deleteAt) return;
+  currentDeleteChallenge = newDeleteChallenge();
+  const overlay = document.getElementById("sync-delete-overlay");
+  overlay.innerHTML = syncDeleteModalHTML();
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  const feld = document.getElementById("sync-delete-answer");
+  if (feld) feld.focus();
+}
+
+function closeSyncDeleteModal() {
+  const overlay = document.getElementById("sync-delete-overlay");
+  if (!overlay || overlay.hidden) return;
+  overlay.hidden = true;
+  overlay.innerHTML = "";
+  syncDeleteBusy = false;
+  document.body.style.overflow = "";
+  const back = document.querySelector('#sync-card [data-action]');
+  if (back) back.focus();
+}
+
+function setSyncDeleteError(message) {
+  const el = document.getElementById("sync-delete-error");
+  if (!el) return;
+  el.textContent = message || "";
+  el.hidden = !message;
+}
+
+async function submitSyncDeleteDialog() {
+  if (syncDeleteBusy || !isSyncDeleteModalOpen()) return;
+  const feld = document.getElementById("sync-delete-answer");
+  const eingabe = (feld ? feld.value : "").trim();
+  if (!/^\d{1,3}$/.test(eingabe) || Number(eingabe) !== currentDeleteChallenge.answer) {
+    setSyncDeleteError(`Das Ergebnis stimmt nicht. Bitte ${currentDeleteChallenge.text.replace(" = ?", "")} ausrechnen — die Frage soll ein versehentliches Löschen verhindern.`);
+    if (feld) { feld.focus(); feld.select(); }
+    return;
+  }
+  setSyncDeleteError("");
+  syncDeleteBusy = true;
+  const knopf = document.querySelector('[data-action="sync-delete-submit"]');
+  if (knopf) knopf.disabled = true;
+  let result;
+  try {
+    result = await syncRequestDelete();
+  } finally {
+    syncDeleteBusy = false;
+    const again = document.querySelector('[data-action="sync-delete-submit"]');
+    if (again) again.disabled = false;
+  }
+  if (!result.ok) { setSyncDeleteError(result.message); return; }
+  closeSyncDeleteModal();
+  showToast("Löschung vorgemerkt — sie lässt sich bis zum Termin abbrechen.");
 }
 
 function isSyncModalOpen() {
@@ -5113,6 +5339,7 @@ function renderUebersicht() {
   const neglectHeading = r.total > 0 && r.trained === r.total ? "Am längsten her" : "Braucht Aufmerksamkeit";
   const eligibility = eligibilityStatus(kyuSince, examTarget.minMonths);
 
+  renderDeleteBand();   // mit der Übersicht frischt auch die verbleibende Zeit im Hinweisband auf
   const content = document.getElementById("uebersicht-content");
   content.innerHTML = `
     <button type="button" class="session-cta-btn" data-action="open-session-modal">
@@ -6362,6 +6589,10 @@ document.addEventListener("click", (e) => {
   if (e.target.closest('[data-action="sync-reconnect"]')) openSyncModal("reconnect");
   if (e.target.closest('[data-action="sync-now"]')) syncNow("Knopf");
   if (e.target.closest('[data-action="sync-disconnect"]')) disconnectFromServer();
+  if (e.target.closest('[data-action="sync-delete"]')) openSyncDeleteModal();
+  if (e.target.closest('[data-action="sync-delete-close"]')) closeSyncDeleteModal();
+  if (e.target.closest('[data-action="sync-delete-submit"]')) submitSyncDeleteDialog();
+  if (e.target.closest('[data-action="sync-delete-cancel"]')) cancelDeleteFromBand();
   if (e.target.closest('[data-action="open-session-modal"]')) openSessionModal();
   const examRowBtn = e.target.closest('.exam-row [data-action]');
   if (examRowBtn) {
@@ -6548,6 +6779,8 @@ syncOverlay.addEventListener("input", () => setSyncDialogError("")); // wer weit
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && isSyncModalOpen()) closeSyncModal();
+  if (e.key === "Escape" && isSyncDeleteModalOpen()) closeSyncDeleteModal();
+  if (e.key === "Enter" && isSyncDeleteModalOpen() && e.target && e.target.id === "sync-delete-answer") { e.preventDefault(); submitSyncDeleteDialog(); }
 });
 
 /* ----- Prüfungs-Chronik: Ereignisse im Fenster ----- */

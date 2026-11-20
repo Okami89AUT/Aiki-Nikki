@@ -4,7 +4,7 @@ Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
 ## ✅ Version 1.6.0 (20.11.2026)
 
-Löschen bekommt eine Bedenkzeit: 24 Stunden, jederzeit abbrechbar.
+Löschen bekommt eine Bedenkzeit: 24 Stunden, jederzeit abbrechbar – im Baustein und in der App (v2.10).
 
 ### Entscheidungen
 
@@ -19,7 +19,10 @@ Löschen bekommt eine Bedenkzeit: 24 Stunden, jederzeit abbrechbar.
 * Neue Gruppe **D** in `tests/test_server.py` (26 Prüfungen): vormerken, weiterarbeiten, fällig werden, abbrechen (auch über einen Neustart), der stündliche Aufräumer, Fehlerfälle. Gruppe A prüft beim Löschen nur noch die Fehlerfälle und das Vormerken.
 * Gegenprobe: 14 neue eingebaute Fehler, alle erkannt. Einer davon war zuerst ungültig (er entfernte nur eine von zwei Sperren, die zweite fing den Fall weiterhin ab) und wurde durch einen gültigen ersetzt.
 * Ein bestehender Mutant (`store-neuer-code-nicht-auf-platte`) traf nicht mehr eindeutig, weil die neue Schreibfunktion dieselbe Zeile verwendet – sein Anker wurde geschärft.
-* Gesamt: Paket 89, Server 253, Gegenprobe 133 von 133 erkannt.
+* App-Teil: 23 Prüfungen für Knopf, Fenster und Rechenaufgabe, 26 für Band, Countdown und Abbruch – zuerst rot, dann grün. Gegenprobe: 20 eingebaute Fehler, alle erkannt; zwei weitere waren ungültig und wurden ersetzt bzw. gestrichen.
+* Dabei kam ein echter Fehler heraus: JavaScript rechnet einen unmöglichen Tag still weiter („2026-02-30" wird zum 2. März). Der Termin wird deshalb per Rückprobe über `toISOString` geprüft.
+* **Prüfstand der App neu aufgebaut.** Die 34 Prüfreihen der Fassungen bis 2.9 sind verloren gegangen (der Arbeitsbereich der Sitzung wurde ersetzt). Neu sind `qa/lib.js` (Browser, nachgebauter Server, feste und weiterstellbare Uhr) und die beiden Reihen oben; eine vollständige Regression über die ganze App gibt es derzeit nicht.
+* Gesamt: Paket 89, Server 253, Gegenprobe 133 von 133 erkannt; App 49 Prüfungen, 20 von 20 Gegenproben erkannt.
 
 ## ✅ Version 1.5.1 (02.11.2026)
 

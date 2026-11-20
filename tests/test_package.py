@@ -100,7 +100,7 @@ def gruppe_aufbau():
     check("K1 app/ enthält genau die App", clean_listing(PKG / "app"), ["aikido-kyu-tracker.html"])
     check("K1 brand/ enthält genau Symbol und Symbol in doppelter Größe", clean_listing(PKG / "brand"), ["icon.png", "icon@2x.png"])
     check("K1 Hauptordner des Repositories: genau die erwarteten Einträge", clean_listing(ROOT),
-          [".github", ".gitignore", "CHANGELOG.md", "LICENSE", "README.md", "custom_components", "docs", "hacs.json", "tests", "tools"])
+          [".github", ".gitignore", "CHANGELOG.md", "LICENSE", "README.md", "custom_components", "docs", "hacs.json", "qa", "tests", "tools"])
     check("K1 Workflows vorhanden", clean_listing(ROOT / ".github" / "workflows"), ["release.yml", "validate.yml"])
     check("K1 docs/: erwartete Dokumente", clean_listing(ROOT / "docs"), ["BAULOG.md", "INSTALLATION.md", "SCHNITTSTELLE.md", "VEROEFFENTLICHEN.md"])
     check("K1 tools/: Bauwerkzeug", clean_listing(ROOT / "tools"), ["build.py"])

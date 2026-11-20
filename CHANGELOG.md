@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung br
 
 ## [1.6.0] – 2026-11-20
 
-Löschen mit 24 Stunden Bedenkzeit (App v2.9).
+Löschen mit 24 Stunden Bedenkzeit (App v2.10).
 
 ### Geändert
 - **`delete` löscht nicht mehr sofort, sondern merkt die Löschung vor.** Ausgeführt wird sie erst 24 Stunden später; bis dahin
@@ -18,9 +18,15 @@ Löschen mit 24 Stunden Bedenkzeit (App v2.9).
 - Fällige Löschungen führt der Baustein stündlich aus und zusätzlich beim nächsten Zugriff auf die betroffene Person. War
   Home Assistant zwischendurch aus, wird es beim nächsten Lauf nachgeholt – der Termin ist der frühestmögliche Zeitpunkt.
 
+- **In der App:** In der Abgleich-Karte gibt es jetzt „Zugang löschen". Das Fenster erklärt, was gelöscht wird (der Zugang auf
+  dem Server samt dortigem Stand – die Daten auf dem Gerät bleiben) und stellt eine kleine Rechenaufgabe gegen das Verklicken.
+  Solange eine Löschung läuft, steht ganz oben ein Band mit Termin, verbleibender Zeit und „Löschung abbrechen".
+  Der Termin kommt bei jedem Abgleich frisch vom Server: Wird die Löschung auf einem anderen Gerät ausgelöst oder abgebrochen,
+  zieht die Anzeige nach.
+
 ### Hinweis
 - Die Schnittstelle bleibt `api: 1`: Ältere App-Fassungen rufen `delete` ohnehin nicht auf, und alle anderen Aufrufe sind unverändert.
-- Der Knopf „Zugang löschen" in der App (mit Sicherheitsabfrage und Hinweisband auf die laufende Frist) folgt im nächsten Schritt.
+- Das Datenformat der App ist unverändert (`schemaVersion` 5) – Geräte mit v2.9 gleichen weiter ab, sie zeigen nur den Hinweis nicht an.
 
 ## [1.5.1] – 2026-11-02
 
