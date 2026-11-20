@@ -20,6 +20,7 @@ from .const import (
     API_VERSION,
     APP_NAME,
     BODY_TIMEOUT_SECONDS,
+    DELETE_DELAY_SECONDS,
     LIMIT_FAIL_IP,
     LIMIT_FAIL_PERSON,
     LIMIT_REQUEST_IP,
@@ -48,7 +49,15 @@ ROUTES = (
     ("POST", "push", "push"),
     ("POST", "change-code", "change_code"),
     ("POST", "delete", "delete"),
+    ("POST", "delete-cancel", "delete_cancel"),
 )
+
+def _with_delete_at(payload: dict, meta) -> dict:
+    """Trägt den Termin einer vorgemerkten Löschung ein – nur wenn es einen gibt."""
+    if getattr(meta, "delete_at", ""):
+        payload["deleteAt"] = meta.delete_at
+    return payload
+
 
 _MISSING = object()
 _NO_CODE = "kein-gueltiger-code"  # Platzhalter, damit auch ungültige Eingaben genau einen Hash rechnen
@@ -175,6 +184,9 @@ class Api:
     async def delete(self, request: web.Request) -> web.Response:
         return await self._guard(request, self._delete)
 
+    async def delete_cancel(self, request: web.Request) -> web.Response:
+        return await self._guard(request, self._delete_cancel)
+
     # ---- Rahmen: Sperren, Fehlerbehandlung ----
     async def _guard(self, request: web.Request, func, *, counted: bool = True) -> web.Response:
         ip = _client_key(request.remote)
@@ -286,6 +298,9 @@ class Api:
         usable = meta is not None and not meta.unreadable and bool(meta.auth)
         auth = meta.auth if usable else self._store.dummy_auth
         ok = await self._cpu_bound(self._verify, code if code is not None else _NO_CODE, auth)
+        if ok and usable and code is not None and self._store.is_due(meta):
+            await self._purge_person(meta.id)
+            ok = False
         if ok and usable and code is not None:
             self._fail_ip.discard(ip, slot_ip)
             if slot_person is not None:
@@ -293,6 +308,17 @@ class Api:
             return meta
         _LOGGER.warning("Anmeldung fehlgeschlagen: Adresse %s, Person %s", ip, pid or "<ungültiger Name>")
         raise _bad_credentials()
+
+    async def _purge_person(self, pid: str) -> None:
+        """Führt eine fällig gewordene Löschung aus (beim Zugriff auf die Person)."""
+        try:
+            await self._store.delete(pid)
+        except NotFound:
+            return
+        except StorageError as err:
+            _LOGGER.error("Person %s: fällige Löschung fehlgeschlagen: %s", pid, err)
+            return
+        _LOGGER.info("Person nach Ablauf der Frist gelöscht: %s", pid)
 
     # ---- Aufrufe ----
     async def _ping(self, request: web.Request, ip: str) -> web.Response:
@@ -339,14 +365,14 @@ class Api:
     async def _login(self, request: web.Request, ip: str) -> web.Response:
         body = await self._read_json(request)
         meta = await self._authenticate(body, ip)
-        return _json_response(200, {"ok": True, "person": {"id": meta.id, "name": meta.name}, "rev": meta.rev, "updatedAt": meta.updated_at})
+        return _json_response(200, _with_delete_at({"ok": True, "person": {"id": meta.id, "name": meta.name}, "rev": meta.rev, "updatedAt": meta.updated_at}, meta))
 
     async def _pull(self, request: web.Request, ip: str) -> web.Response:
         body = await self._read_json(request)
         since = _count(body, "sinceRev") if "sinceRev" in body else None
         meta = await self._authenticate(body, ip)
         if since is not None and since == meta.rev:
-            return _json_response(200, {"ok": True, "unchanged": True, "rev": meta.rev, "updatedAt": meta.updated_at})
+            return _json_response(200, _with_delete_at({"ok": True, "unchanged": True, "rev": meta.rev, "updatedAt": meta.updated_at}, meta))
         try:
             current, data = await self._store.read(meta.id)
         except NotFound:
@@ -354,7 +380,7 @@ class Api:
         except StorageError as err:
             _LOGGER.error("Person %s: Lesen fehlgeschlagen: %s", meta.id, err)
             raise _storage_error() from None
-        payload = {"ok": True, "person": {"id": current.id, "name": current.name}, "rev": current.rev, "updatedAt": current.updated_at, "data": data}
+        payload = _with_delete_at({"ok": True, "person": {"id": current.id, "name": current.name}, "rev": current.rev, "updatedAt": current.updated_at, "data": data}, meta)
         accepts_gzip = "gzip" in request.headers.get("Accept-Encoding", "").lower()
         return await asyncio.get_running_loop().run_in_executor(None, self._build_data_response, payload, accepts_gzip)
 
@@ -400,7 +426,7 @@ class Api:
                 "Auf dem Server liegt ein neuerer Stand. Bitte zuerst abholen und zusammenführen.",
                 extra={"rev": result.rev, "updatedAt": result.updated_at},
             )
-        payload = {"ok": True, "rev": result.rev, "updatedAt": result.updated_at}
+        payload = _with_delete_at({"ok": True, "rev": result.rev, "updatedAt": result.updated_at}, meta)
         if result.status == "unchanged":
             payload["unchanged"] = True
         return _json_response(200, payload)
@@ -425,16 +451,30 @@ class Api:
         return _json_response(200, {"ok": True})
 
     async def _delete(self, request: web.Request, ip: str) -> web.Response:
+        """Löscht nicht sofort, sondern merkt die Löschung vor – abbrechbar bis zum Termin."""
         body = await self._read_json(request)
         if body.get("confirm") is not True:
             raise ApiError(400, "bad_request", "Zum Löschen muss „confirm“ genau true sein.")
         meta = await self._authenticate(body, ip)
         try:
-            await self._store.delete(meta.id)
+            when = await self._store.request_delete(meta.id, DELETE_DELAY_SECONDS)
         except NotFound:
             raise _bad_credentials() from None
         except StorageError as err:
-            _LOGGER.error("Person %s: Löschen fehlgeschlagen: %s", meta.id, err)
+            _LOGGER.error("Person %s: Löschen konnte nicht vorgemerkt werden: %s", meta.id, err)
             raise _storage_error() from None
-        _LOGGER.info("Person gelöscht: %s", meta.id)
-        return _json_response(200, {"ok": True})
+        _LOGGER.info("Löschung vorgemerkt: %s (fällig %s)", meta.id, when)
+        return _json_response(200, {"ok": True, "deleteAt": when})
+
+    async def _delete_cancel(self, request: web.Request, ip: str) -> web.Response:
+        body = await self._read_json(request)
+        meta = await self._authenticate(body, ip)
+        try:
+            await self._store.cancel_delete(meta.id)
+        except NotFound:
+            raise _bad_credentials() from None
+        except StorageError as err:
+            _LOGGER.error("Person %s: Löschung konnte nicht abgebrochen werden: %s", meta.id, err)
+            raise _storage_error() from None
+        _LOGGER.info("Löschung abgebrochen: %s", meta.id)
+        return _json_response(200, {"ok": True, "deleteAt": None})

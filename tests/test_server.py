@@ -2,8 +2,8 @@
 """Tests für den Server-Baustein "aikido_tracker" (ohne Home Assistant).
 
 Gruppen:  L Namen/Codes/Hash   P Speicherung (Dateien, Neustart, Sicherungen)   A Schnittstelle (HTTP)   R Sperren/Schutz
-          S Auslieferung der App-Seite   W Pfade (mitgelieferte App, page_file, Datenordner-Schutz)
-Aufruf:   python3 tests/test_server.py [L P A R S W]      (AIKIDO_SRC=… prüft einen anderen Quellordner)
+          S Auslieferung der App-Seite   W Pfade (mitgelieferte App, page_file, Datenordner-Schutz)   D Löschfrist (24 h)
+Aufruf:   python3 tests/test_server.py [L P A R S W D]      (AIKIDO_SRC=… prüft einen anderen Quellordner)
 Ausgabe wie bei den App-Tests: "  FALSCH <Name>" je Fehler, am Ende eine Zusammenfassung, Exitcode 1 bei Fehlern.
 """
 import asyncio
@@ -619,19 +619,12 @@ async def gruppe_A():
         await e.push("Sebastian", CODE, 0, {"a": 1})
         await e.push("Sebastian", CODE, 1, {"a": 2})
         r = await e.call("delete", {"name": "Sebastian", "code": CODE})
-        check('A8 Löschen ohne confirm -> 400, nichts gelöscht', [fehler(r), e.person_file("sebastian").exists()], [[400, False, "bad_request"], True])
-        r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": "ja"})
-        check('A8 confirm muss genau true sein -> 400', fehler(r), [400, False, "bad_request"])
+        check('A8 Löschen ohne confirm -> 400, nichts vorgemerkt', [fehler(r), e.person_file("sebastian").exists()], [[400, False, "bad_request"], True])
         r = await e.call("delete", {"name": "Sebastian", "code": "falsch-999", "confirm": True}, remote="10.8.8.1")
-        check('A8 Löschen mit falschem Code -> 401, nichts gelöscht', [fehler(r), e.person_file("sebastian").exists()], [[401, False, "bad_credentials"], True])
+        check('A8 Löschen mit falschem Code -> 401, nichts vorgemerkt', [fehler(r), "deleteAt" in (await e.login("Sebastian", CODE)).json], [[401, False, "bad_credentials"], False])
         r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
-        check('A8 Löschen: 200 ok, Datei weg', [r.status, r.json.get("ok"), e.person_file("sebastian").exists()], [200, True, False])
-        check('A8 danach: Anmelden -> 401, Abholen -> 401', [(await e.login("Sebastian", CODE, remote="10.8.8.2")).status, (await e.pull("Sebastian", CODE, remote="10.8.8.3")).status], [401, 401])
-        check('A8 Sicherung der gelöschten Person bleibt (history_days > 0): Tagessicherung + letzter Stand',
-              sorted(os.path.basename(p) for p in e.all_files() if p.startswith("history/_deleted-sebastian-")), sorted([f"{e.clock.date()}.json.gz", "final.json.gz"]))
-        check('A8 ... und es liegt nichts anderes mehr unter history/ oder persons/', [p for p in e.all_files() if not p.startswith("history/_deleted-sebastian-")], [])
-        r = await e.register("Sebastian", "neuer-code-2")
-        check('A8 derselbe Name lässt sich neu anlegen (leer)', [r.status, (await e.pull("Sebastian", "neuer-code-2")).json["data"]], [201, {}])
+        check('A8 Löschen: 200 mit Termin, die Datei bleibt bis dahin stehen (Einzelheiten in Gruppe D)',
+              [r.status, r.json.get("ok"), bool(r.json.get("deleteAt")), e.person_file("sebastian").exists()], [200, True, True, True])
 
     # ---- Kopfzeilen, Methoden, Pfade ----
     async with Env() as e:
@@ -949,8 +942,130 @@ async def gruppe_W():
 
 
 # =====================================================================================================================
+# D: Löschfrist (24 Stunden Bedenkzeit)
+# =====================================================================================================================
+# Vertrag zwischen Test und Baustein:
+#   POST delete        {name, code, confirm: true}  -> 200 {"ok": true, "deleteAt": "<ISO>"}  — merkt vor, löscht NICHT
+#   POST delete-cancel {name, code}                 -> 200 {"ok": true, "deleteAt": null}     — bricht ab (auch wenn nichts vorgemerkt ist)
+#   login / pull / push tragen "deleteAt" in der Antwort, solange eine Löschung vorgemerkt ist (sonst steht das Feld nicht da)
+#   Fällig wird die Löschung nach CONST.DELETE_DELAY_SECONDS; ausgeführt wird sie beim nächsten Zugriff auf die Person
+#   und unabhängig davon über store.purge_due() (der Baustein ruft das stündlich auf).
+#   Store: meta.delete_at (ISO oder ""), request_delete(pid) -> ISO, cancel_delete(pid), purge_due() -> Liste der gelöschten Kennungen
+# =====================================================================================================================
+async def gruppe_D():
+    TAG = 24 * 3600
+
+    # ---- D1: vormerken, weiterarbeiten, fällig werden ----
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        await e.push("Sebastian", CODE, 0, {"a": 1})
+        check('D1 die Frist steht im Baustein und beträgt 24 Stunden', CONST.DELETE_DELAY_SECONDS, TAG)
+        r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        termin = STORE.iso_utc(e.clock.t + TAG)
+        check('D1 Löschen meldet den Termin in 24 Stunden und löscht noch nichts',
+              [r.status, r.json.get("ok"), r.json.get("deleteAt"), e.person_file("sebastian").exists()], [200, True, termin, True])
+        r = await e.pull("Sebastian", CODE)
+        check('D1 Abholen geht weiter, die Daten sind unberührt, der Termin steht in der Antwort',
+              [r.status, r.json["data"], r.json.get("deleteAt")], [200, {"a": 1}, termin])
+        r = await e.push("Sebastian", CODE, 1, {"a": 2})
+        check('D1 Hochladen geht weiter und meldet den Termin mit', [r.status, r.json.get("rev"), r.json.get("deleteAt")], [200, 2, termin])
+        r = await e.login("Sebastian", CODE)
+        check('D1 Anmelden geht weiter und meldet den Termin mit', [r.status, r.json.get("deleteAt")], [200, termin])
+        e.clock.advance(TAG - 60)
+        check('D1 eine Minute vor dem Termin ist alles noch da',
+              [(await e.login("Sebastian", CODE)).status, await e.store.purge_due(), e.person_file("sebastian").exists()], [200, [], True])
+        e.clock.advance(120)
+        check('D1 nach dem Termin ist der Zugang beim nächsten Anmelden weg -> 401',
+              [(await e.login("Sebastian", CODE, remote="10.1.1.1")).status, e.person_file("sebastian").exists()], [401, False])
+        check('D1 die Sicherungen der gelöschten Person bleiben erhalten: die Tagessicherung vom Tag des Hochladens (25.10.) und der letzte Stand',
+              sorted(os.path.basename(p) for p in e.all_files() if p.startswith("history/_deleted-sebastian-")),
+              sorted(["2026-10-25.json.gz", "final.json.gz"]))
+        r = await e.register("Sebastian", "neuer-code-2")
+        check('D1 derselbe Name lässt sich danach neu anlegen (leer, ohne Termin)',
+              [r.status, (await e.pull("Sebastian", "neuer-code-2")).json["data"], "deleteAt" in r.json], [201, {}, False])
+
+    # ---- D2: abbrechen ----
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        await e.push("Sebastian", CODE, 0, {"a": 1})
+        await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        r = await e.call("delete-cancel", {"name": "Sebastian", "code": CODE})
+        check('D2 Abbrechen: 200 und kein Termin mehr', [r.status, r.json.get("ok"), r.json.get("deleteAt")], [200, True, None])
+        await e.restart()
+        check('D2 der Abbruch ist auch wirklich gespeichert (übersteht einen Neustart)', "deleteAt" in (await e.login("Sebastian", CODE)).json, False)
+        e.clock.advance(3 * TAG)
+        check('D2 drei Tage später ist der Zugang samt Daten noch da',
+              [(await e.login("Sebastian", CODE)).status, (await e.pull("Sebastian", CODE)).json["data"], await e.store.purge_due()], [200, {"a": 1}, []])
+        check('D2 ohne vorgemerkte Löschung steht kein Termin in den Antworten',
+              ["deleteAt" in (await e.login("Sebastian", CODE)).json, "deleteAt" in (await e.pull("Sebastian", CODE)).json], [False, False])
+        r = await e.call("delete-cancel", {"name": "Sebastian", "code": CODE})
+        check('D2 Abbrechen ohne vorgemerkte Löschung ist kein Fehler', [r.status, r.json.get("ok")], [200, True])
+        # zweimal löschen verschiebt den Termin nicht nach hinten
+        r1 = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        e.clock.advance(3600)
+        r2 = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        check('D2 nochmals löschen verschiebt den Termin nicht', [r1.json["deleteAt"], r2.json["deleteAt"]], [r1.json["deleteAt"], r1.json["deleteAt"]])
+        r = await e.call("delete-cancel", {"name": "Sebastian", "code": "falsch-999"}, remote="10.2.2.1")
+        check('D2 Abbrechen mit falschem Code -> 401, der Termin bleibt stehen',
+              [fehler(r), (await e.login("Sebastian", CODE)).json.get("deleteAt")], [[401, False, "bad_credentials"], r1.json["deleteAt"]])
+
+    # ---- D3: der stündliche Aufräumer ----
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        await e.register("Anna", CODE)
+        await e.register("Lena", CODE)
+        await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        await e.call("delete", {"name": "Anna", "code": CODE, "confirm": True})
+        e.clock.advance(TAG + 1)
+        check('D3 der Aufräumer löscht beide fälligen Personen und nennt sie', sorted(await e.store.purge_due()), ["anna", "sebastian"])
+        check('D3 Lena ist unberührt', [e.person_file("lena").exists(), e.person_file("anna").exists(), e.person_file("sebastian").exists()], [True, False, False])
+        check('D3 ein zweiter Lauf findet nichts mehr', await e.store.purge_due(), [])
+
+    # ---- D4: Neustart und kaputte Datei ----
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        termin = r.json["deleteAt"]
+        await e.restart()
+        check('D4 der Termin übersteht einen Neustart', (await e.login("Sebastian", CODE)).json.get("deleteAt"), termin)
+        e.clock.advance(TAG + 1)
+        check('D4 nach dem Neustart wird die fällige Löschung auch ausgeführt', await e.store.purge_due(), ["sebastian"])
+        await e.register("Anna", CODE)
+        await e.call("delete", {"name": "Anna", "code": CODE, "confirm": True})
+        e.person_file("anna").write_text("{kaputt", encoding="utf-8")
+        await e.restart()
+        e.clock.advance(TAG + 1)
+        check('D4 eine unlesbare Datei wird vom Aufräumer nicht angefasst',
+              [await e.store.purge_due(), e.person_file("anna").exists()], [[], True])
+        await e.register("Lena", CODE)
+        doc = json.loads(e.person_file("lena").read_text(encoding="utf-8"))
+        doc["deleteAt"] = 5
+        e.person_file("lena").write_text(json.dumps(doc), encoding="utf-8")
+        await e.restart()
+        check('D4 ein deleteAt, das kein Text ist, macht die Datei unlesbar (sie wird nicht angefasst)',
+              [(await e.login("Lena", CODE, remote="10.4.4.1")).status, e.person_file("lena").exists()], [401, True])
+
+    # ---- D5: Fehlerfälle ----
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        r = await e.call("delete", {"name": "Sebastian", "code": CODE})
+        check('D5 Löschen ohne confirm -> 400, nichts vorgemerkt',
+              [fehler(r), "deleteAt" in (await e.login("Sebastian", CODE)).json], [[400, False, "bad_request"], False])
+        r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": "ja"})
+        check('D5 confirm muss genau true sein -> 400', fehler(r), [400, False, "bad_request"])
+        r = await e.call("delete", {"name": "Sebastian", "code": "falsch-999", "confirm": True}, remote="10.5.5.1")
+        check('D5 Löschen mit falschem Code -> 401', fehler(r), [401, False, "bad_credentials"])
+        r = await e.call("delete-cancel", {"name": "Gibtsnicht", "code": CODE}, remote="10.5.5.2")
+        check('D5 Abbrechen für einen unbekannten Namen -> 401 (nicht unterscheidbar)', fehler(r), [401, False, "bad_credentials"])
+        r = await e.call("delete-cancel", {"name": "Sebastian"}, remote="10.5.5.3")
+        check('D5 Abbrechen ohne Code -> 400', fehler(r), [400, False, "bad_request"])
+        r = await e.call("delete-cancel", {"name": "Sebastian", "code": CODE}, method="GET")
+        check('D5 delete-cancel gibt es nur als POST', r.status, 405)
+
+
+# =====================================================================================================================
 async def main():
-    gruppen = {"L": gruppe_L, "P": gruppe_P, "A": gruppe_A, "R": gruppe_R, "S": gruppe_S, "W": gruppe_W}
+    gruppen = {"L": gruppe_L, "P": gruppe_P, "A": gruppe_A, "R": gruppe_R, "S": gruppe_S, "W": gruppe_W, "D": gruppe_D}
     wahl = [a.upper() for a in sys.argv[1:]] or list(gruppen)
     global N, FEHLER
     for g in wahl:

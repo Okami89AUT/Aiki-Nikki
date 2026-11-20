@@ -1,6 +1,6 @@
 # Aikido Tracker – Server-Baustein für Home Assistant: Schnittstelle (API 1)
 
-Stand: 02.11.2026 · Baustein: Custom Integration `aikido_tracker` · Version 1.5.1
+Stand: 20.11.2026 · Baustein: Custom Integration `aikido_tracker` · Version 1.6.0
 
 ## Zweck
 
@@ -50,7 +50,7 @@ Er liefert außerdem die App selbst aus (`/aikido-tracker`, siehe unten); die Ap
 ## Aufrufe
 
 ### `GET /api/aikido_tracker/ping`
-Ohne Anmeldung, ohne Zähler. Antwort: `{"ok": true, "app": "aikido-tracker-server", "api": 1, "version": "1.5.1", "registration": true|false}`.
+Ohne Anmeldung, ohne Zähler. Antwort: `{"ok": true, "app": "aikido-tracker-server", "api": 1, "version": "1.6.0", "registration": true|false}`.
 `registration` = ob ein Einladungscode eingerichtet ist (Anlegen möglich).
 
 ### `POST /api/aikido_tracker/register` – Person anlegen
@@ -62,6 +62,7 @@ Reihenfolge der Prüfungen: Felder → Einladungscode → Name → Code → Plat
 ### `POST /api/aikido_tracker/login` – Zugang prüfen
 Körper: `{"name": "Sebastian", "code": "geheim123"}`.
 Antwort: `{"ok": true, "person": {"id", "name"}, "rev": 7, "updatedAt": "…"}`. Fehler: `401 bad_credentials`, `429 rate_limited`.
+Ist für diese Person eine Löschung vorgemerkt, steht zusätzlich `"deleteAt": "<ISO>"` in der Antwort (sonst fehlt das Feld). Das gilt ebenso für `pull` und `push`.
 
 ### `POST /api/aikido_tracker/pull` – Datenstand abholen
 Körper: `{"name", "code", "sinceRev": 7}` (`sinceRev` optional, ganze Zahl ≥ 0).
@@ -81,9 +82,22 @@ Reihenfolge der Prüfungen: Felder (`baseRev`, `data` vorhanden) → Anmeldung �
 ### `POST /api/aikido_tracker/change-code` – Zugangscode ändern
 Körper: `{"name", "code", "newCode"}`. Antwort `{"ok": true}`. Fehler: `401`, `422 invalid_code`, `429`.
 
-### `POST /api/aikido_tracker/delete` – Person und Daten löschen
-Körper: `{"name", "code", "confirm": true}`. Antwort `{"ok": true}`. Ohne `"confirm": true` (genau der Wert `true`) → `400 bad_request`.
-Die Tagessicherungen der Person bleiben noch `history_days` Tage erhalten (Wiederherstellung von Hand) und werden danach gelöscht.
+### `POST /api/aikido_tracker/delete` – Löschung vormerken
+Körper: `{"name", "code", "confirm": true}`. Antwort `{"ok": true, "deleteAt": "<ISO>"}`. Ohne `"confirm": true` (genau der Wert `true`) → `400 bad_request`.
+
+**Es wird nichts sofort gelöscht.** Der Aufruf merkt die Löschung vor; ausgeführt wird sie erst nach einer Bedenkzeit von
+24 Stunden (`DELETE_DELAY_SECONDS`). Bis dahin bleibt alles unverändert nutzbar: Anmelden, Abholen und Hochladen laufen weiter,
+und jede dieser Antworten trägt den Termin als `deleteAt` mit, damit die App darauf hinweisen kann.
+Ein zweiter Aufruf verschiebt den Termin **nicht** (der erste gilt).
+
+Fällig gewordene Löschungen führt der Baustein aus: stündlich von selbst und zusätzlich beim nächsten Zugriff auf diese Person
+(der Zugang verhält sich dann wie nicht vorhanden → `401`). War Home Assistant zwischendurch aus, wird die Löschung beim
+nächsten Lauf nachgeholt – der Termin ist also der *frühestmögliche* Zeitpunkt.
+Die Tagessicherungen der Person bleiben danach noch `history_days` Tage erhalten (Wiederherstellung von Hand) und werden dann gelöscht.
+
+### `POST /api/aikido_tracker/delete-cancel` – Löschung abbrechen
+Körper: `{"name", "code"}`. Antwort `{"ok": true, "deleteAt": null}`. Ist gar keine Löschung vorgemerkt, ist das kein Fehler (gleiche Antwort).
+Fehler wie `login`. Nur wer Name und Code kennt, kann abbrechen – und nur solange der Termin noch nicht erreicht ist.
 
 ### Weitere Fehlercodes
 `400 bad_request` (kein JSON, falscher Typ, Feld fehlt; auch `408` bei unvollständig übertragener Anfrage), `500 server_error` (unerwarteter Fehler; steht mit Einzelheiten im Home-Assistant-Protokoll).

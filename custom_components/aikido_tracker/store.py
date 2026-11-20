@@ -191,6 +191,7 @@ class Meta:
     unreadable: bool = False
     auth: dict | None = None
     digest: str = ""
+    delete_at: str = ""        # ISO-Zeitpunkt der vorgemerkten Löschung, "" = keine
 
 
 class WriteResult(NamedTuple):
@@ -222,6 +223,8 @@ def _read_doc(path: str, pid: str) -> dict:
         raise ValueError("created ist ungültig")
     if not isinstance(doc.get("auth"), dict) or not doc["auth"]:
         raise ValueError("Zugangsdaten fehlen")
+    if not isinstance(doc.get("deleteAt", ""), str):
+        raise ValueError("deleteAt ist ungültig")
     if not isinstance(doc.get("data"), dict):
         raise ValueError("Daten fehlen")
     return doc
@@ -235,6 +238,7 @@ def _meta_light(doc: dict) -> Meta:
         updated_at=doc["updatedAt"],
         created=doc.get("created", ""),
         auth=doc["auth"],
+        delete_at=doc.get("deleteAt", ""),
     )
 
 
@@ -245,16 +249,19 @@ def _meta_from_doc(doc: dict) -> Meta:
 
 
 def _doc_bytes(meta: Meta, raw_data: bytes) -> bytes:
+    head_fields = {
+        "format": FORMAT,
+        "id": meta.id,
+        "name": meta.name,
+        "created": meta.created,
+        "auth": meta.auth,
+        "rev": meta.rev,
+        "updatedAt": meta.updated_at,
+    }
+    if meta.delete_at:
+        head_fields["deleteAt"] = meta.delete_at
     head = json.dumps(
-        {
-            "format": FORMAT,
-            "id": meta.id,
-            "name": meta.name,
-            "created": meta.created,
-            "auth": meta.auth,
-            "rev": meta.rev,
-            "updatedAt": meta.updated_at,
-        },
+        head_fields,
         ensure_ascii=False,
         separators=(",", ":"),
     )
@@ -529,6 +536,59 @@ class PersonStore:
         meta = _meta_light(doc)
         meta.auth = auth
         _atomic_write(path, _doc_bytes(meta, canonical(doc["data"]).encode("utf-8")))
+
+    # -- Löschen vormerken, abbrechen, fällige ausführen --
+    async def request_delete(self, pid: str, delay: float) -> str:
+        """Merkt die Löschung vor und liefert den Termin. Ein bereits gesetzter Termin bleibt stehen."""
+        meta = self._usable(pid)
+        if meta.delete_at:
+            return meta.delete_at
+        when = iso_utc(self._clock() + delay)
+        async with self._lock_for(pid):
+            meta = self._usable(pid)
+            if meta.delete_at:
+                return meta.delete_at
+            await self._run(self._set_delete_at_sync, pid, when)
+            meta.delete_at = when
+        return when
+
+    async def cancel_delete(self, pid: str) -> None:
+        meta = self._usable(pid)
+        if not meta.delete_at:
+            return
+        async with self._lock_for(pid):
+            meta = self._usable(pid)
+            if not meta.delete_at:
+                return
+            await self._run(self._set_delete_at_sync, pid, "")
+            meta.delete_at = ""
+
+    def _set_delete_at_sync(self, pid: str, when: str) -> None:
+        path = self._person_path(pid)
+        doc = _read_doc(path, pid)
+        meta = _meta_light(doc)
+        meta.delete_at = when
+        _atomic_write(path, _doc_bytes(meta, canonical(doc["data"]).encode("utf-8")))
+
+    def is_due(self, meta: Meta) -> bool:
+        """Ist die vorgemerkte Löschung dieser Person fällig?"""
+        return bool(meta.delete_at) and meta.delete_at <= iso_utc(self._clock())
+
+    async def purge_due(self) -> list:
+        """Löscht alle fälligen Personen und liefert ihre Kennungen (aufsteigend)."""
+        faellig = sorted(m.id for m in self._metas.values() if not m.unreadable and self.is_due(m))
+        geloescht = []
+        for pid in faellig:
+            try:
+                await self.delete(pid)
+            except NotFound:
+                continue
+            except StorageError as err:
+                _LOGGER.error("Person %s: fällige Löschung fehlgeschlagen: %s", pid, err)
+                continue
+            _LOGGER.info("Person nach Ablauf der Frist gelöscht: %s", pid)
+            geloescht.append(pid)
+        return geloescht
 
     # -- Löschen --
     async def delete(self, pid: str) -> None:

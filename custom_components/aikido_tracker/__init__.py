@@ -55,6 +55,7 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 _PRUNE_EVERY = timedelta(hours=6)
+_PURGE_EVERY = timedelta(hours=1)   # fällige Löschungen (24-Stunden-Frist) einsammeln
 
 
 def _make_view(method: str, path: str, handler) -> type[HomeAssistantView]:
@@ -135,6 +136,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             _LOGGER.warning("Aikido Tracker: Aufräumen der Tagessicherungen fehlgeschlagen: %s", err)
 
     async_track_time_interval(hass, _prune, _PRUNE_EVERY)
+
+    async def _purge(_now) -> None:
+        try:
+            await store.purge_due()
+        except StoreError as err:
+            _LOGGER.warning("Aikido Tracker: fällige Löschungen konnten nicht ausgeführt werden: %s", err)
+
+    async_track_time_interval(hass, _purge, _PURGE_EVERY)
 
     if invite is None:
         _LOGGER.warning(

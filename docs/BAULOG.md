@@ -2,6 +2,25 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.6.0 (20.11.2026)
+
+Löschen bekommt eine Bedenkzeit: 24 Stunden, jederzeit abbrechbar.
+
+### Entscheidungen
+
+* **Frist statt Rückfrage.** Eine Sicherheitsabfrage schützt nur vor dem Verklicken in genau dieser Sekunde. Die 24 Stunden schützen auch vor dem Entschluss im Ärger – und zwar nur dann, wenn der laufende Termin sichtbar ist: deshalb trägt jede Antwort auf `login`, `pull` und `push` den Termin mit, damit die App ein Hinweisband mit Abbruch zeigen kann.
+* **Weiterarbeiten während der Frist.** Der Datenstand bleibt vollständig nutzbar und wird weiter abgeglichen. Alles andere hieße, dass ein versehentlicher Löschwunsch einen Tag lang Daten kostet, obwohl er zurückgenommen werden kann.
+* **Der Termin wird nicht verschoben.** Ein zweiter Löschaufruf gibt den ersten Termin zurück. Sonst könnte ein Gerät, das stumpf wiederholt, die Löschung endlos hinausschieben.
+* **Zweimal ausgeführt.** Stündlich von selbst (für Zugänge, die niemand mehr anfasst) und zusätzlich beim nächsten Zugriff auf die Person (damit der Termin auch nach einem Ausfall sofort stimmt). Der Termin ist damit der frühestmögliche Zeitpunkt, nicht der exakte.
+* **Unlesbare Dateien fasst der Aufräumer nicht an** – so wie bisher auch. Eine kaputte Datei wird untersucht, nicht entsorgt.
+
+### Prüfungen
+
+* Neue Gruppe **D** in `tests/test_server.py` (26 Prüfungen): vormerken, weiterarbeiten, fällig werden, abbrechen (auch über einen Neustart), der stündliche Aufräumer, Fehlerfälle. Gruppe A prüft beim Löschen nur noch die Fehlerfälle und das Vormerken.
+* Gegenprobe: 14 neue eingebaute Fehler, alle erkannt. Einer davon war zuerst ungültig (er entfernte nur eine von zwei Sperren, die zweite fing den Fall weiterhin ab) und wurde durch einen gültigen ersetzt.
+* Ein bestehender Mutant (`store-neuer-code-nicht-auf-platte`) traf nicht mehr eindeutig, weil die neue Schreibfunktion dieselbe Zeile verwendet – sein Anker wurde geschärft.
+* Gesamt: Paket 89, Server 253, Gegenprobe 133 von 133 erkannt.
+
 ## ✅ Version 1.5.1 (02.11.2026)
 
 Mitgelieferte App auf v2.9 (Dauer, Kalender-Eintrag, Wochenziel); der Baustein selbst ist unverändert.

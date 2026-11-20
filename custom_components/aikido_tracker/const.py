@@ -1,7 +1,7 @@
 """Konstanten des Aikido-Tracker-Bausteins."""
 
 DOMAIN = "aikido_tracker"
-VERSION = "1.5.1"
+VERSION = "1.6.0"
 API_VERSION = 1
 APP_NAME = "aikido-tracker-server"
 
@@ -32,6 +32,9 @@ DATA_KEY_PATTERN = r"[A-Za-z][A-Za-z0-9_]{0,40}"
 SCRYPT_N = 2 ** 14
 SCRYPT_R = 8
 SCRYPT_P = 1
+
+# Löschfrist: Zeit zwischen Löschwunsch und tatsächlichem Löschen (Bedenkzeit, Abbruch jederzeit möglich)
+DELETE_DELAY_SECONDS = 24 * 3600
 
 # Sperren (gleitende Zeitfenster, Sekunden)
 WINDOW_FAIL = 15 * 60

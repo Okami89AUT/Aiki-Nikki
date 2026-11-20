@@ -3,6 +3,25 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.6.0] – 2026-11-20
+
+Löschen mit 24 Stunden Bedenkzeit (App v2.9).
+
+### Geändert
+- **`delete` löscht nicht mehr sofort, sondern merkt die Löschung vor.** Ausgeführt wird sie erst 24 Stunden später; bis dahin
+  bleibt der Zugang vollständig nutzbar (Anmelden, Abholen, Hochladen). Die Antwort nennt den Termin als `deleteAt`, und
+  `login`, `pull` und `push` tragen ihn mit, solange er gilt – damit die App darauf hinweisen kann.
+- Ein zweiter Löschaufruf verschiebt den Termin nicht; es gilt der erste.
+
+### Neu
+- **`delete-cancel`** (Name + Code) bricht eine vorgemerkte Löschung ab. Ohne vorgemerkte Löschung ist der Aufruf kein Fehler.
+- Fällige Löschungen führt der Baustein stündlich aus und zusätzlich beim nächsten Zugriff auf die betroffene Person. War
+  Home Assistant zwischendurch aus, wird es beim nächsten Lauf nachgeholt – der Termin ist der frühestmögliche Zeitpunkt.
+
+### Hinweis
+- Die Schnittstelle bleibt `api: 1`: Ältere App-Fassungen rufen `delete` ohnehin nicht auf, und alle anderen Aufrufe sind unverändert.
+- Der Knopf „Zugang löschen" in der App (mit Sicherheitsabfrage und Hinweisband auf die laufende Frist) folgt im nächsten Schritt.
+
 ## [1.5.1] – 2026-11-02
 
 Trainingsdauer, Kalender-Eintrag und Wochenziel (App v2.9).
