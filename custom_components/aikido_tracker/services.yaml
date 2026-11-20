@@ -1,0 +1,14 @@
+person_loeschen:
+  name: Person löschen
+  description: >-
+    Entfernt eine auf dem Server angelegte Person samt ihrem dort gespeicherten Stand – sofort, ohne die
+    24-stündige Bedenkzeit. Gedacht für dich als Betreiber, etwa wenn ein Zugangscode verloren ist.
+    Die Tagessicherungen der Person bleiben noch so lange erhalten, wie history_days vorgibt.
+  fields:
+    name:
+      name: Name
+      description: Der Name der Person auf dem Server (Groß-/Kleinschreibung und Akzente sind egal).
+      required: true
+      example: Daniel
+      selector:
+        text:

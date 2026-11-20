@@ -295,6 +295,8 @@ class Api:
             code = None
         slot_ip, slot_person = self._reserve_attempt(ip, pid, self._clock())
         meta = self._store.find(pid) if pid is not None else None
+        if meta is not None and not self._store.present(meta.id):
+            meta = None   # die Datei dieser Person ist verschwunden: der Zugang gilt als nicht vorhanden
         usable = meta is not None and not meta.unreadable and bool(meta.auth)
         auth = meta.auth if usable else self._store.dummy_auth
         ok = await self._cpu_bound(self._verify, code if code is not None else _NO_CODE, auth)

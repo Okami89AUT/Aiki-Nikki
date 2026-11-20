@@ -3,6 +3,28 @@
 Alle nennenswerten Änderungen am Baustein „Aikido Tracker“. Jede Fassung bringt die dazu passende App mit
 („App v…“ = Version des Aikido Kyu Trackers, die im Baustein steckt).
 
+## [1.6.1] – 2026-11-20
+
+Übersicht der angelegten Personen und ein Fehler weniger (App v2.10 unverändert).
+
+### Neu
+- **Sensor `sensor.aikido_tracker_personen`**: Zustand = Anzahl der angelegten Personen, Attribute = die Personen mit
+  Name, Kennung, Stand, letzter Änderung, Anlagedatum und etwaigem Löschtermin, dazu `anzahl`, `maximal`, `unlesbar`,
+  `loeschungen`. Zugangscodes stehen dort nicht – auch nicht als Hash.
+- **Dienst `aikido_tracker.person_loeschen`** (Feld `name`): entfernt eine Person sofort, ohne die 24-stündige
+  Bedenkzeit. Für den Betreiber gedacht, etwa wenn ein Zugangscode verloren ist und der Name wieder frei werden soll.
+
+### Behoben
+- **Verschwundene Datei einer Person.** Fehlte die Datei einer angelegten Person (von außen gelöscht, verlorener Ordner),
+  nahm der Server die Anmeldung weiterhin an und meldete danach endlos „Der Server kann gerade nicht speichern"; der Name
+  blieb bis zum Neustart belegt. Jetzt vergisst der Baustein eine Person, deren Datei fehlt, beim nächsten Zugriff: Der
+  Zugang verhält sich wie ein unbekannter (`401`), und der Name ist sofort wieder frei. Eine Datei, die da, aber unlesbar
+  ist, bleibt unverändert liegen – kaputt heißt untersuchen, nicht wegwerfen.
+
+### Warum
+- Bis jetzt gab es keine Möglichkeit zu sehen, wer überhaupt angelegt ist: Der Server sagt bewusst nicht, ob ein Name
+  existiert (damit niemand Namen durchprobieren kann), und für den Betreiber gab es keinen anderen Weg als den Dateieditor.
+
 ## [1.6.0] – 2026-11-20
 
 Löschen mit 24 Stunden Bedenkzeit (App v2.10).

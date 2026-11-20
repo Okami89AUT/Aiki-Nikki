@@ -96,7 +96,7 @@ def png_size(p):
 def gruppe_aufbau():
     check("K1 custom_components enthält genau einen Ordner: aikido_tracker", clean_listing(ROOT / "custom_components"), ["aikido_tracker"])
     check("K1 Inhalt des Bausteins: genau die erwarteten Dateien und Ordner", clean_listing(PKG),
-          ["__init__.py", "api.py", "app", "brand", "const.py", "identity.py", "limits.py", "manifest.json", "page.py", "store.py"])
+          ["__init__.py", "api.py", "app", "brand", "const.py", "identity.py", "limits.py", "manifest.json", "page.py", "report.py", "sensor.py", "services.yaml", "store.py"])
     check("K1 app/ enthält genau die App", clean_listing(PKG / "app"), ["aikido-kyu-tracker.html"])
     check("K1 brand/ enthält genau Symbol und Symbol in doppelter Größe", clean_listing(PKG / "brand"), ["icon.png", "icon@2x.png"])
     check("K1 Hauptordner des Repositories: genau die erwarteten Einträge", clean_listing(ROOT),

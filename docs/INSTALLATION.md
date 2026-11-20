@@ -96,6 +96,26 @@ aikido_tracker:
 * Beim Löschen einer Person (in der App) bleiben ihre Tagessicherungen noch `history_days` Tage erhalten; danach ist sie vollständig weg.
 * Die App lädt ihre Schriften derzeit von einem externen Schriftendienst. Wer die App öffentlich anbietet, sollte das bedenken (Datenschutz); die Schriften lassen sich später mitliefern.
 
+## Wer ist angelegt? (Übersicht im Dashboard)
+
+Der Baustein legt dafür einen Sensor an: **`sensor.aikido_tracker_personen`**.
+
+* **Zustand** = Anzahl der angelegten Personen.
+* **Angaben** (Attribute): `personen` — je Person Name, Kennung, Stand (`rev`), Zeitpunkt der letzten Änderung,
+  Anlagedatum, ein etwaiger Löschtermin und ob die Datei lesbar ist; dazu `anzahl`, `maximal`, `unlesbar`, `loeschungen`.
+* Zugangscodes stehen dort **nicht** – auch nicht in verschlüsselter Form. Sie verlassen den Datenordner nie.
+
+Auf dem Dashboard genügt eine Karte „Entitäten" mit diesem Sensor; die Namensliste steht in den Attributen
+(z. B. als Markdown-Karte: `{{ state_attr('sensor.aikido_tracker_personen','personen') }}`).
+Der Sensor frischt sich alle fünf Minuten auf – sofort geht es mit der Aktion *Entität aktualisieren*.
+
+### Eine Person entfernen
+
+Dienst **`aikido_tracker.person_loeschen`** mit dem Feld `name` (Entwicklerwerkzeuge → Aktionen).
+Er löscht **sofort** – ohne die 24-stündige Bedenkzeit, die für das Löschen aus der App gilt. Gedacht ist er für dich
+als Betreiber: etwa, wenn ein Zugangscode verloren ist und der Name wieder frei werden soll. Die Tagessicherungen der
+Person bleiben noch `history_days` Tage erhalten.
+
 ## Wenn etwas nicht klappt
 
 | Beobachtung | Ursache / Abhilfe |
@@ -106,6 +126,7 @@ aikido_tracker:
 | Anmelden: 429 „Zu viele Fehlversuche“ | Sperre (siehe oben): die Meldung nennt die Wartezeit. |
 | Anfragen aus dem Internet scheitern mit 400 | Proxy-Einstellung `use_x_forwarded_for` / `trusted_proxies` fehlt (siehe oben). |
 | Registrieren: 403 | Falscher Einladungscode – oder `invite_code` ist nicht eingestellt. |
+| Anmelden klappt, aber danach „Der Server kann gerade nicht speichern" | Die Datei dieser Person fehlt im Datenordner (Protokoll: `FileNotFoundError … persons/<kennung>.json`). Ab 1.6.1 vergisst der Baustein eine Person, deren Datei verschwunden ist, beim nächsten Zugriff von selbst; der Name ist danach wieder frei. |
 | Mehr Einzelheiten nötig | In `configuration.yaml`: `logger:` → `logs:` → `custom_components.aikido_tracker: debug`. |
 
 Passwörter, Zugangscodes und Einladungscodes erscheinen **nie** im Protokoll; Fehlversuche stehen mit Adresse und Kennung darin.

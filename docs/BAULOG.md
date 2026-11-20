@@ -2,6 +2,27 @@
 
 Selbstdokumentierendes Protokoll der Entwicklung (neueste Version zuerst).
 
+## ✅ Version 1.6.1 (20.11.2026)
+
+Übersicht der angelegten Personen – ein Sensor fürs Dashboard und ein Dienst zum Entfernen; dazu ein Fehler, der im Betrieb aufgefallen ist.
+
+### Entscheidungen
+
+* **Die Liste gehört nach innen, nicht in die Schnittstelle.** Ein Aufruf „wer ist angelegt" wäre über das Netz erreichbar und würde Namen verraten; der Server sagt bewusst nicht einmal, ob ein Name existiert. Die Übersicht läuft deshalb über Home Assistant selbst: Wer dort angemeldet ist, sieht sie – sonst niemand.
+* **Nur Beschreibendes.** `store.overview()` gibt Name, Kennung, Stand, Zeitpunkte, Löschtermin und Lesbarkeit zurück – nie `auth`. Eine eigene Prüfung sucht in der fertigen Ausgabe nach „scrypt", „salt", „hash" und dem Klartext-Code; der Mutant, der die Zugangsdaten doch mitschickt, fällt damit auf.
+* **Der Dienst löscht sofort.** Die 24-Stunden-Frist schützt den Benutzer vor sich selbst. Der Betreiber, der einen verwaisten Zugang wegräumt, braucht keine Frist, sondern ein Ergebnis – und er kommt an die Datei ohnehin heran.
+* **Reine Logik getrennt von der Anbindung.** `report.py` formt die Anzeige-Angaben und kennt Home Assistant nicht; nur `sensor.py` und die Dienstanmeldung in `__init__.py` hängen daran. So ist das Verhalten ohne laufendes Home Assistant prüfbar.
+
+* **Verschwundene Datei (aus dem Betrieb).** Die Datei einer angelegten Person war verschwunden. Der Server nahm die Anmeldung trotzdem an (der Name lag im Arbeitsspeicher) und meldete danach endlos „kann gerade nicht speichern"; der Name blieb bis zum Neustart belegt. Jetzt prüft jeder Zugriff, ob die Datei noch da ist, und vergisst die Person sonst — der Zugang verhält sich wie ein unbekannter, der Name ist frei. Das kostet einen Blick auf die Platte je Anfrage, und das ist es wert.
+* **Unlesbar ist nicht dasselbe wie weg.** Eine kaputte Datei bleibt liegen und der Name belegt (sie soll untersucht werden); verschwindet auch sie, wird die Person ebenfalls vergessen. Diesen zweiten Fall hat erst ein überlebender Mutant sichtbar gemacht: Meine erste Fassung hätte eine einmal als unlesbar geladene Person für immer belegt gehalten.
+
+### Prüfungen
+
+* Neue Gruppe **F** in `tests/test_server.py` (8 Prüfungen): fehlende Datei beim Abholen, Anmelden und Hochladen, Name danach wieder frei, kaputte Datei bleibt.
+* Neue Gruppe **V** in `tests/test_server.py` (12 Prüfungen): Inhalt und Sortierung der Übersicht, Löschtermin, unlesbare Datei, keine Zugangsdaten, die Anzeige-Angaben mit und ohne Personen.
+* Gegenprobe: 11 neue eingebaute Fehler, alle erkannt; gesamt 144 von 144. Eine Erwartung in Gruppe F war zuerst falsch (eine unlesbare Datei ergibt 401 wie ein falscher Code, nicht 500) — so steht es in der Schnittstelle, der Test wurde nachgezogen.
+* Nicht automatisch geprüft ist die Anbindung selbst (Sensor-Klasse, Dienstanmeldung): dafür bräuchte es ein laufendes Home Assistant (`tests/test_live.py`). Geprüft wurde sie nach dem Einspielen am Gerät.
+
 ## ✅ Version 1.6.0 (20.11.2026)
 
 Löschen bekommt eine Bedenkzeit: 24 Stunden, jederzeit abbrechbar – im Baustein und in der App (v2.10).

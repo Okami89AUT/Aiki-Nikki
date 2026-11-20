@@ -537,6 +537,38 @@ class PersonStore:
         meta.auth = auth
         _atomic_write(path, _doc_bytes(meta, canonical(doc["data"]).encode("utf-8")))
 
+    def present(self, pid: str) -> bool:
+        """Ist diese Person noch da? Fehlt ihre DATEI, wird sie vergessen — der Name ist danach wieder frei.
+
+        Das kostet einen Blick auf die Platte je Aufruf (os.path.exists). Vorher führte eine verschwundene Datei dazu,
+        dass der Zugang endlos „kann gerade nicht speichern" meldete und der Name bis zum Neustart belegt blieb.
+        Entscheidend ist allein, ob die Datei da ist: Eine Datei, die da, aber unlesbar ist, bleibt liegen (kaputt heißt
+        untersuchen, nicht wegwerfen) — ist auch sie verschwunden, wird die Person ebenfalls vergessen.
+        """
+        if self._metas.get(pid) is None:
+            return False
+        if os.path.exists(self._person_path(pid)):
+            return True
+        self._metas.pop(pid, None)
+        _LOGGER.error("Die Datei der Person %s fehlt; sie gilt ab sofort als nicht vorhanden (der Name ist wieder frei).", pid)
+        return False
+
+    # -- Übersicht (für die Anzeige in Home Assistant) --
+    def overview(self) -> list:
+        """Alle bekannten Personen, nach Kennung sortiert — nur Beschreibendes, NIE Zugangsdaten."""
+        return [
+            {
+                "id": m.id,
+                "name": m.name,
+                "rev": m.rev,
+                "updated_at": m.updated_at,
+                "created": m.created,
+                "delete_at": m.delete_at,
+                "unreadable": m.unreadable,
+            }
+            for m in sorted(self._metas.values(), key=lambda m: m.id)
+        ]
+
     # -- Löschen vormerken, abbrechen, fällige ausführen --
     async def request_delete(self, pid: str, delay: float) -> str:
         """Merkt die Löschung vor und liefert den Termin. Ein bereits gesetzter Termin bleibt stehen."""

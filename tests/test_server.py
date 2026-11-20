@@ -3,7 +3,7 @@
 
 Gruppen:  L Namen/Codes/Hash   P Speicherung (Dateien, Neustart, Sicherungen)   A Schnittstelle (HTTP)   R Sperren/Schutz
           S Auslieferung der App-Seite   W Pfade (mitgelieferte App, page_file, Datenordner-Schutz)   D Löschfrist (24 h)
-Aufruf:   python3 tests/test_server.py [L P A R S W D]      (AIKIDO_SRC=… prüft einen anderen Quellordner)
+Aufruf:   python3 tests/test_server.py [L P A R S W D V F]      (AIKIDO_SRC=… prüft einen anderen Quellordner)
 Ausgabe wie bei den App-Tests: "  FALSCH <Name>" je Fehler, am Ende eine Zusammenfassung, Exitcode 1 bei Fehlern.
 """
 import asyncio
@@ -366,6 +366,46 @@ async def gruppe_P():
     finally:
         import shutil
         shutil.rmtree(d, ignore_errors=True)
+
+
+# =====================================================================================================================
+# F: die Datei einer Person verschwindet unter dem laufenden Server
+# ---------------------------------------------------------------------------------------------------------------------
+# Vertrag: Fehlt die Datei, VERGISST der Baustein die Person beim nächsten Zugriff — der Zugang verhält sich dann wie
+# ein unbekannter (401), und der Name ist wieder frei. Eine Datei, die da, aber unlesbar ist, bleibt dagegen liegen:
+# kaputt heißt untersuchen, nicht wegwerfen.
+# =====================================================================================================================
+async def gruppe_F():
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        await e.push("Sebastian", CODE, 0, {"a": 1})
+        os.unlink(e.person_file("sebastian"))
+        r = await e.pull("Sebastian", CODE, remote="10.7.7.1")
+        check('F1 Abholen ohne Datei: 401 wie bei unbekanntem Zugang (kein 500)', fehler(r), [401, False, "bad_credentials"])
+        check('F1 die Person ist danach vergessen', [p["id"] for p in e.store.overview()], [])
+        r = await e.register("Sebastian", "neuer-code-2")
+        check('F1 der Name ist wieder frei', [r.status, (await e.pull("Sebastian", "neuer-code-2")).json["data"]], [201, {}])
+        os.unlink(e.person_file("sebastian"))
+        check('F1 dasselbe beim Anmelden und beim Hochladen',
+              [fehler(await e.login("Sebastian", "neuer-code-2", remote="10.7.7.2")), [p["id"] for p in e.store.overview()]],
+              [[401, False, "bad_credentials"], []])
+        await e.register("Sebastian", "neuer-code-3")
+        os.unlink(e.person_file("sebastian"))
+        check('F1 ... und beim Hochladen', fehler(await e.push("Sebastian", "neuer-code-3", 0, {"b": 2}, remote="10.7.7.3")), [401, False, "bad_credentials"])
+
+    async with Env() as e:
+        await e.register("Anna", CODE)
+        e.person_file("anna").write_text("{kaputt", encoding="utf-8")
+        await e.restart()   # erst beim Laden merkt der Baustein, dass die Datei unlesbar ist
+        r = await e.pull("Anna", CODE, remote="10.7.7.4")
+        check('F2 eine vorhandene, aber unlesbare Datei wird NICHT vergessen (401 wie dokumentiert, Datei bleibt liegen)',
+              [fehler(r), [p["id"] for p in e.store.overview()], e.person_file("anna").exists()], [[401, False, "bad_credentials"], ["anna"], True])
+        r = await e.register("Anna", "noch-ein-code")
+        check('F2 der Name bleibt in diesem Fall belegt', fehler(r), [409, False, "name_taken"])
+        os.unlink(e.person_file("anna"))
+        check('F2 verschwindet auch die kaputte Datei, wird die Person vergessen und der Name ist frei',
+              [fehler(await e.login("Anna", CODE, remote="10.7.7.5")), [p["id"] for p in e.store.overview()], (await e.register("Anna", "noch-ein-code")).status],
+              [[401, False, "bad_credentials"], [], 201])
 
 
 # =====================================================================================================================
@@ -1064,8 +1104,62 @@ async def gruppe_D():
 
 
 # =====================================================================================================================
+# V: Übersicht der angelegten Personen (für Home Assistant)
+# =====================================================================================================================
+# Vertrag zwischen Test und Baustein:
+#   store.overview() -> Liste (nach Kennung sortiert) mit id, name, rev, updated_at, created, delete_at, unreadable
+#                       — NIEMALS Zugangsdaten (kein Hash, kein Salz, kein Code).
+#   report.overview_attributes(personen, max_persons) -> Angaben für die Anzeige in Home Assistant:
+#                       personen (Liste mit deutschen Schlüsseln), anzahl, maximal, unlesbar, loeschungen
+# =====================================================================================================================
+async def gruppe_V():
+    REPORT = __import__("aikido_tracker.report", fromlist=["x"])
+
+    async with Env() as e:
+        check('V1 frischer Server: niemand angelegt', e.store.overview(), [])
+        await e.register("Sebastian", CODE)
+        await e.register("Anna", CODE)
+        await e.push("Sebastian", CODE, 0, {"a": 1})
+        liste = e.store.overview()
+        check('V1 beide Personen, nach Kennung sortiert, mit Name und Stand',
+              [[p["id"] for p in liste], [p["name"] for p in liste], [p["rev"] for p in liste]], [["anna", "sebastian"], ["Anna", "Sebastian"], [0, 1]])
+        check('V1 Zeitangaben sind gefüllt und der Löschtermin ist leer',
+              [all(p["updated_at"] and p["created"] for p in liste), [p["delete_at"] for p in liste], [p["unreadable"] for p in liste]], [True, ["", ""], [False, False]])
+        check('V1 in der Übersicht steckt KEIN Zugangsdatum (kein Hash, kein Salz, kein Code)',
+              [t in json.dumps(liste).lower() for t in ("scrypt", "salt", "hash", "auth", CODE)], [False, False, False, False, False])
+        r = await e.call("delete", {"name": "Anna", "code": CODE, "confirm": True})
+        check('V1 eine vorgemerkte Löschung steht in der Übersicht', next(p["delete_at"] for p in e.store.overview() if p["id"] == "anna"), r.json["deleteAt"])
+        await e.call("delete-cancel", {"name": "Anna", "code": CODE})
+        check('V1 nach dem Abbrechen steht sie wieder leer da', next(p["delete_at"] for p in e.store.overview() if p["id"] == "anna"), "")
+
+    async with Env() as e:
+        await e.register("Sebastian", CODE)
+        e.person_file("sebastian").write_text("{kaputt", encoding="utf-8")
+        await e.restart()
+        check('V2 eine unlesbare Datei erscheint in der Übersicht und ist als solche gekennzeichnet',
+              [[p["id"] for p in e.store.overview()], [p["unreadable"] for p in e.store.overview()]], [["sebastian"], [True]])
+
+    async with Env() as e:
+        check('V3 Anzeige-Angaben ohne Personen', REPORT.overview_attributes(e.store.overview(), 20),
+              {"personen": [], "anzahl": 0, "maximal": 20, "unlesbar": 0, "loeschungen": 0})
+        await e.register("Sebastian", CODE)
+        await e.push("Sebastian", CODE, 0, {"a": 1})
+        r = await e.call("delete", {"name": "Sebastian", "code": CODE, "confirm": True})
+        a = REPORT.overview_attributes(e.store.overview(), 20)
+        check('V3 Zahlen stimmen', [a["anzahl"], a["maximal"], a["unlesbar"], a["loeschungen"]], [1, 20, 0, 1])
+        check('V3 je Person deutsche Schlüssel mit Name, Stand, Zeitpunkt und Löschtermin',
+              a["personen"], [{"name": "Sebastian", "kennung": "sebastian", "stand": 1, "zuletzt": a["personen"][0]["zuletzt"], "angelegt": a["personen"][0]["angelegt"], "loeschung": r.json["deleteAt"], "lesbar": True}])
+        await e.register("Anna", CODE)
+        b = REPORT.overview_attributes(e.store.overview(), 20)
+        check('V3 ohne vorgemerkte Löschung steht dort nichts (nicht ein leerer Text)',
+              [next(x["loeschung"] for x in b["personen"] if x["kennung"] == "anna"), b["loeschungen"], b["anzahl"]], [None, 1, 2])
+        check('V3 auch die Anzeige-Angaben enthalten keine Zugangsdaten',
+              [t in json.dumps(a).lower() for t in ("scrypt", "salt", "hash", CODE)], [False, False, False, False])
+
+
+# =====================================================================================================================
 async def main():
-    gruppen = {"L": gruppe_L, "P": gruppe_P, "A": gruppe_A, "R": gruppe_R, "S": gruppe_S, "W": gruppe_W, "D": gruppe_D}
+    gruppen = {"L": gruppe_L, "P": gruppe_P, "A": gruppe_A, "R": gruppe_R, "S": gruppe_S, "W": gruppe_W, "D": gruppe_D, "V": gruppe_V, "F": gruppe_F}
     wahl = [a.upper() for a in sys.argv[1:]] or list(gruppen)
     global N, FEHLER
     for g in wahl:

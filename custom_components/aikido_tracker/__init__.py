@@ -14,6 +14,7 @@ import voluptuous as vol
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
 
@@ -31,8 +32,9 @@ from .const import (
     MAX_CODE_LEN,
     MIN_CODE_LEN,
 )
+from .identity import InvalidName, normalize_name
 from .page import PAGE_URL, make_page_handler, resolve_page_path
-from .store import PersonStore, StoreError, is_inside
+from .store import NotFound, PersonStore, StoreError, is_inside
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +55,9 @@ CONFIG_SCHEMA = vol.Schema(
     },
     extra=vol.ALLOW_EXTRA,
 )
+
+SERVICE_DELETE_PERSON = "person_loeschen"
+_SERVICE_SCHEMA = vol.Schema({vol.Required("name"): cv.string})
 
 _PRUNE_EVERY = timedelta(hours=6)
 _PURGE_EVERY = timedelta(hours=1)   # fällige Löschungen (24-Stunden-Frist) einsammeln
@@ -111,11 +116,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             package_dir,
         )
         return False
-    store = PersonStore(
-        data_dir,
-        history_days=conf.get(CONF_HISTORY_DAYS, DEFAULT_HISTORY_DAYS),
-        max_persons=conf.get(CONF_MAX_PERSONS, DEFAULT_MAX_PERSONS),
-    )
+    history_days = conf.get(CONF_HISTORY_DAYS, DEFAULT_HISTORY_DAYS)
+    max_persons = conf.get(CONF_MAX_PERSONS, DEFAULT_MAX_PERSONS)
+    store = PersonStore(data_dir, history_days=history_days, max_persons=max_persons)
     try:
         await store.async_load()
     except StoreError as err:
@@ -144,6 +147,31 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             _LOGGER.warning("Aikido Tracker: fällige Löschungen konnten nicht ausgeführt werden: %s", err)
 
     async_track_time_interval(hass, _purge, _PURGE_EVERY)
+
+    # Übersicht der angelegten Personen: ein Sensor fürs Dashboard, dazu ein Dienst zum Entfernen einer Person.
+    # Der Dienst löscht SOFORT (ohne die 24-Stunden-Frist): Er ist für dich als Betreiber gedacht, nicht für den,
+    # der den Zugang benutzt – und genau für den Fall, dass ein Zugangscode verloren ist.
+    hass.data[DOMAIN] = {"store": store, "max_persons": max_persons}
+
+    async def _delete_person(call) -> None:
+        roh = call.data["name"]
+        try:
+            pid = normalize_name(roh)[0]
+        except InvalidName as err:
+            _LOGGER.error("Aikido Tracker: „%s“ ist kein gültiger Name (%s)", roh, err)
+            return
+        try:
+            await store.delete(pid)
+        except NotFound:
+            _LOGGER.warning("Aikido Tracker: Es gibt keine Person „%s“ (Kennung %s)", roh, pid)
+            return
+        except StoreError as err:
+            _LOGGER.error("Aikido Tracker: Person %s konnte nicht gelöscht werden: %s", pid, err)
+            return
+        _LOGGER.warning("Aikido Tracker: Person %s wurde über den Dienst gelöscht (Sicherungen bleiben %d Tage)", pid, history_days)
+
+    hass.services.async_register(DOMAIN, SERVICE_DELETE_PERSON, _delete_person, schema=_SERVICE_SCHEMA)
+    hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, config))
 
     if invite is None:
         _LOGGER.warning(
