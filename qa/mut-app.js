@@ -9,7 +9,7 @@ const { execFileSync } = require('child_process');
 
 const QUELLE = path.join(__dirname, 'app.html');
 const ARBEIT = path.join(__dirname, '.mut');
-const SUITEN = ['own/e1-loeschen.js', 'own/e2-band.js'];
+const SUITEN = ['own/e1-loeschen.js', 'own/e2-band.js', 'own/f1-notizen.js'];
 
 const M = [
   // (Die Schreibweisen-Prüfung in cleanDeleteAt ist seit der Rückprobe über toISOString eine redundante Vorprüfung:
@@ -34,6 +34,18 @@ const M = [
   ['server-abbruch-wird-nicht-uebernommen', [['  const wert = cleanDeleteAt(data.deleteAt);', '  const wert = cleanDeleteAt(data.deleteAt) || syncState.deleteAt || null;']]],
   ['knopf-auch-waehrend-der-frist', [['${syncState.deleteAt ? "" : \'<button type="button" class="sync-btn danger" data-action="sync-delete">Zugang löschen</button>\'}', '<button type="button" class="sync-btn danger" data-action="sync-delete">Zugang löschen</button>']]],
   ['fenster-oeffnet-trotz-laufender-frist', [['if (!syncState || !syncServer.available || syncState.deleteAt) return;', 'if (!syncState || !syncServer.available) return;']]],
+  // ---- Notizen je Technik (Verlauf, gruppierte Sicht) ----
+  ['notizen-zaehlt-eintraege-statt-tage', [['      g._tage.add(tag);', '      g._tage.add(tag + e.id);']]],
+  ['notizen-aelteste-technik-zuerst', [['liste.sort((a, b) => (a.letzte === b.letzte ? a.technik.localeCompare(b.technik, "de") : a.letzte < b.letzte ? 1 : -1));', 'liste.sort((a, b) => (a.letzte === b.letzte ? a.technik.localeCompare(b.technik, "de") : a.letzte < b.letzte ? -1 : 1));']]],
+  ['notizen-ohne-namenssortierung', [['liste.sort((a, b) => (a.letzte === b.letzte ? a.technik.localeCompare(b.technik, "de")', 'liste.sort((a, b) => (a.letzte === b.letzte ? (b.technik.localeCompare(a.technik, "de"))']]],
+  ['notizen-aelteste-notiz-zuerst', [['g.notizen.sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));', 'g.notizen.sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? -1 : 1));']]],
+  ['notizen-leere-notizen-mitgezaehlt', [['    if (textOrEmpty(e.note)) g.notizen.push({ date: textOrEmpty(e.date), text: e.note });', '    g.notizen.push({ date: textOrEmpty(e.date), text: e.note });']]],
+  ['notizen-gruppe-nur-nach-namen', [['const key = textOrEmpty(e.techniqueId) || `${textOrEmpty(e.technik)}|${textOrEmpty(e.attack)}|${textOrEmpty(e.category)}`;', 'const key = textOrEmpty(e.technik);']]],
+  ['notizen-umschalter-wirkungslos', [['  if (historyView === "technik") {', '  if (false) {']]],
+  ['notizen-umschalter-merkt-nichts', [['  historyView = e.target.value === "technik" ? "technik" : "zeit";', '  historyView = "zeit";']]],
+  ['notizen-werden-nicht-angezeigt', [['      ${notizen}\n    </div>`;', '      \n    </div>`;']]],
+  ['notizen-ohne-tageszahl', [['<div class="tech-group-meta">${tage}${zuletzt}', '<div class="tech-group-meta">${zuletzt}']]],
+  ['notizen-immer-mehrzahl', [['const tage = `${g.tage} ${g.tage === 1 ? "Trainingstag" : "Trainingstage"}`;', 'const tage = `${g.tage} Trainingstage`;']]],
 ];
 
 const wahl = process.argv.slice(2);
